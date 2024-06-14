@@ -434,7 +434,7 @@ async function getStaffList(req, res) {
 
 async function deleteStaff(req, res) {
     
-    const user_id = req?.body?.user_id || req.user.id;;
+    const user_id = req.body.user_id;
     try{
         const SQL = `UPDATE users SET status = 0 WHERE id = ? AND role_id NOT IN (1,2)`;
         await db.execute(SQL, [user_id]);

@@ -127,8 +127,9 @@ async function markAppointmentAsCompleted(req, res) {
 
 async function rejectAppointment(req, res) {
     try {
-        const {logged_in_user_id, appointment_id} = req.body;
-        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_user_id);
+        const logged_in_id = req?.query?.logged_in_id || req.user.id;
+        const appointment_id = req.body.appointment_id;
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         
         var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, 'appointments', 'delete_permission');
         
