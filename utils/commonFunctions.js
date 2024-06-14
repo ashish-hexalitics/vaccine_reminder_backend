@@ -343,7 +343,7 @@ async function isVaccineAssignedToDoctor(doctor_id, vaccine_id) {
         }
 
     } catch (catcherr) {
-        
+        throw catcherr;
     }
 }
 
