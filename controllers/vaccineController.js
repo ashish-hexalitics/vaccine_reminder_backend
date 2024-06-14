@@ -152,12 +152,43 @@ async function getMasterVaccineTemplateList(req, res) {
     }
 }
 
-async function updatePatientVaccinationStatus(patient_id, vaccine_id) {
+async function updatePatientVaccinationStatus(req, res) {
     try {
+        const {patient_id, vaccine_id} = req.query;
         const SQL = `UPDATE patient_vaccination_status SET vaccinated_status = 1 WHERE patient_id = ? AND vaccine_id = ?`;
         await db.execute(SQL, [patient_id, vaccine_id]);
 
         res.status(200).json({response_data : {}, message : "Patient's Vaccination Status Updated Successfully", status : 200});
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+async function updateVaccineDetails(req, res) {
+    try {
+        const logged_in_id = req?.query?.user_id || user_id;
+        const vaccine_id = req.query.vaccine_master_id;
+
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const isUserSuperadmin = commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = commonFunctions.isAdmin(logged_in_user_role_id);
+
+        if (!isUserSuperadmin && !isUserAdmin) {
+            const {name, description, vaccine_range, version_number, is_mandatory, status} = req.query;
+
+            const SQL = `UPDATE doctor_master_vaccine_details 
+            SET name = ?, description = ?, vaccine_range = ?, version_number = ?, is_mandatory = ?, status = ?`;
+
+            const values = [name, description, vaccine_range, version_number, is_mandatory, status];
+
+            await db.execute(SQL, values);
+
+            res.status(200).json({response_data : {}, message : "Vaccine details have been updated successfully", status : 200});
+        } else {
+            res.status(401).json({response_data : {}, message : "You are not authorized to perform this operation", status : 401});
+        }
+        
+        
     } catch (catcherr) {
         throw catcherr;
     }
@@ -205,4 +236,5 @@ module.exports = {
     getMasterVaccineTemplateList,
     getVaccineVersionList,
     updatePatientVaccinationStatus //14-06-2024
+
 }
