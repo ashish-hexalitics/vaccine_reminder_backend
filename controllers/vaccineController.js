@@ -167,19 +167,19 @@ async function updatePatientVaccinationStatus(req, res) {
 async function updateVaccineDetails(req, res) {
     try {
         const logged_in_id = req?.query?.user_id || user_id;
-        const vaccine_id = req.query.vaccine_master_id;
+        const vaccine_id = req.query.vaccine_id;
 
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = commonFunctions.isSuperAdmin(logged_in_user_role_id);
         const isUserAdmin = commonFunctions.isAdmin(logged_in_user_role_id);
 
         if (!isUserSuperadmin && !isUserAdmin) {
-            const {name, description, vaccine_range, version_number, is_mandatory, status} = req.query;
+            const {name, description, vaccine_range, version_number, is_mandatory, status, updated_date, updated_by} = req.query;
 
             const SQL = `UPDATE doctor_master_vaccine_details 
-            SET name = ?, description = ?, vaccine_range = ?, version_number = ?, is_mandatory = ?, status = ?`;
+            SET name = ?, description = ?, vaccine_range = ?, version_number = ?, is_mandatory = ?, status = ?, updated_date = ?, updated_by = ?`;
 
-            const values = [name, description, vaccine_range, version_number, is_mandatory, status];
+            const values = [name, description, vaccine_range, version_number, is_mandatory, status, updated_date, updated_by];
 
             await db.execute(SQL, values);
 
@@ -235,6 +235,6 @@ module.exports = {
     testCheckPermission,
     getMasterVaccineTemplateList,
     getVaccineVersionList,
-    updatePatientVaccinationStatus //14-06-2024
-
+    updatePatientVaccinationStatus, //14-06-2024
+    updateVaccineDetails
 }
