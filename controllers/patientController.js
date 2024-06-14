@@ -85,14 +85,14 @@ async function getAllActivePatients(req, res) {
     //Intended to be used by Admins and the Superadmin
     try {
         const status = 1;
-        [result] = await db.execute(`SELECT patients.id, patients.name, gender, patients.date_of_birth, 
+        const [result] = await db.execute(`SELECT patients.id, patients.name, gender, patients.date_of_birth, 
         users.name as doctor_or_staff_name FROM patients INNER JOIN users ON 
         patients.parent_id = users.id WHERE patients.status = ?`, [status]);
             
         if( result.length == 0 ) {
             res.status(404).json({response_data : {}, message : 'No Patient Found', status : 404})    
         } else {
-            res.status(200).json({response_data : result, message : 'all patients', status : 200})
+            res.status(200).json({response_data : result[0], message : 'all patients', status : 200})
         }
                     
     } catch( catcherr ) {

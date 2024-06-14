@@ -101,6 +101,8 @@ async function viewPreviousAppointments(req, res) {
     
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 async function markAppointmentAsCompleted(req, res) {
     try {
         const {logged_in_user_id, appointment_id, prescription_details} = req.body;
@@ -120,6 +122,8 @@ async function markAppointmentAsCompleted(req, res) {
         throw catcherr;
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 async function rejectAppointment(req, res) {
     try {

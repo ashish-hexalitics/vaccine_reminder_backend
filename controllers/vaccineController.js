@@ -152,6 +152,17 @@ async function getMasterVaccineTemplateList(req, res) {
     }
 }
 
+async function updatePatientVaccinationStatus(patient_id, vaccine_id) {
+    try {
+        const SQL = `UPDATE patient_vaccination_status SET vaccinated_status = 1 WHERE patient_id = ? AND vaccine_id = ?`;
+        await db.execute(SQL, [patient_id, vaccine_id]);
+
+        res.status(200).json({response_data : {}, message : "Patient's Vaccination Status Updated Successfully", status : 200});
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // async function calculateVaccineSchedule(req, res) {
@@ -193,4 +204,5 @@ module.exports = {
     testCheckPermission,
     getMasterVaccineTemplateList,
     getVaccineVersionList,
+    updatePatientVaccinationStatus //14-06-2024
 }

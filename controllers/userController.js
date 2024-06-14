@@ -301,7 +301,7 @@ async function login(req, res) {
         WHERE email = ? AND users.status = 1`;
         
         const [result] = await db.execute(SQL, [email]);
-        
+        console.log(result);
         if (result.length === 0) {
             return res.status(400).json({ 
                 response_data : {},
@@ -372,7 +372,7 @@ async function login(req, res) {
 async function getAUser(req, res) {
 
     try{
-        const user_id = req?.query?.user_id || req.user.id;
+        const user_id = req.query.user_id;
         const SQL = `SELECT u.id, u.role_id, ur.role_name, u.parent_id, u.name, u.email, u.date_of_birth FROM users u 
         INNER JOIN user_roles ur ON u.role_id = ur.id 
         WHERE u.id = ? AND u.status = 1`;
