@@ -5,12 +5,12 @@ const moment = require('moment');
 async function isSuperAdmin(user_role_id) {
     
     try{
-        const result = await db.execute(`SELECT role_name FROM user_roles WHERE id = ?`, [user_role_id]);
+        const [result] = await db.execute(`SELECT role_name FROM user_roles WHERE id = ?`, [user_role_id]);
     
         if(result.length > 0){
             // console.log("result " + result);
 
-            const role_name = result[0][0].role_name;
+            const role_name = result[0].role_name;
             if (role_name.toLowerCase() === 'superadmin') {
                 return true;
             } else {
@@ -28,10 +28,10 @@ async function isSuperAdmin(user_role_id) {
 async function isAdmin(user_role_id) {
     
     try{
-        const result = await db.execute(`SELECT role_name FROM user_roles WHERE id = ?`, [user_role_id]);
-        console.log(result);
+        const [result] = await db.execute(`SELECT role_name FROM user_roles WHERE id = ?`, [user_role_id]);
+        
         if(result.length > 0){
-            const role_name = result[0][0].role_name;
+            const role_name = result[0].role_name;
             if (role_name.toLowerCase() === 'admin') {
                 return true;
             } else {
@@ -331,12 +331,32 @@ async function calculateVaccineSchedule(patient_id) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-async function isVaccineAssignedToDoctor(doctor_id, vaccine_id) {
+async function isVaccineAssignedToDoctor(vaccine_id, doctor_id) {
     try {
-        const SQL = `SELECT count(id) FROM doctor_master_vaccine_details WHERE id = ? AND doctor_id = ?`;
+        const SQL = `SELECT count(id) as resultcount FROM doctor_master_vaccine_details WHERE id = ? AND doctor_id = ?`;
+        const formattedQuery = db.format(SQL, [vaccine_id, doctor_id]);
+        console.log(formattedQuery);
         const [result] = await db.execute(SQL, [vaccine_id, doctor_id]);
+        console.log(result);
+        if( result[0].resultcount > 0 ) {
+            return true;
+        } else {
+            return false;
+        }
 
-        if( result.length > 0 ) {
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+async function isVaccineForPatient(vaccine_id, patient_id) {
+    try {
+        const SQL = `SELECT vaccine_ids FROM patients WHERE id = ?`
+        const [result] = await db.execute(SQL, [patient_id]);
+        
+        const arr = result[0].vaccine_ids.split(",");
+
+        if( arr.includes(vaccine_id) ) {
             return true;
         } else {
             return false;
@@ -362,5 +382,6 @@ module.exports={
     checkValidUserId,
     calculateVaccineSchedule,
     getUserRoleNameByRoleId,
-    isVaccineAssignedToDoctor,
+    isVaccineAssignedToDoctor, //2024-06-14
+    isVaccineForPatient //2024-06-14
 }

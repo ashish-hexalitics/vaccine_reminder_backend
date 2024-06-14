@@ -146,9 +146,9 @@ async function registerUser(req, res) {
                     await db.execute(copySQL1, [newUserId]);
 
                     const copySQL2 = `INSERT INTO doctor_master_vaccine_details (doctor_id, master_vaccine_id, name, 
-                        description, vaccine_range, version_number, is_mandatory, created_by, created_date)
+                        description, vaccine_range, range_type, version_number, is_mandatory, created_by, created_date)
                         SELECT ?, master_vaccine_id, name, 
-                        description, vaccine_range, version_number, is_mandatory, created_by, created_date
+                        description, vaccine_range, range_type, version_number, is_mandatory, created_by, created_date
                         FROM master_vaccine_details`;
 
                     await db.execute(copySQL2, [newUserId]);

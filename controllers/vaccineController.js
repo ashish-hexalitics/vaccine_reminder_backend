@@ -154,32 +154,54 @@ async function getMasterVaccineTemplateList(req, res) {
 
 async function updatePatientVaccinationStatus(req, res) {
     try {
-        const {patient_id, vaccine_id} = req.query;
-        const SQL = `UPDATE patient_vaccination_status SET vaccinated_status = 1 WHERE patient_id = ? AND vaccine_id = ?`;
-        await db.execute(SQL, [patient_id, vaccine_id]);
 
-        res.status(200).json({response_data : {}, message : "Patient's Vaccination Status Updated Successfully", status : 200});
+        const logged_in_id = req?.query?.user_id || req.user.id;
+
+        const {patient_id, vaccine_id} = req.query;
+
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+
+        if( !isUserSuperadmin && !isUserAdmin ) {
+
+            isVaccineForThisPatient = await commonFunctions.isVaccineForPatient(vaccine_id, patient_id);
+
+            if( isVaccineForThisPatient ) {
+                const SQL = `UPDATE patient_vaccination_info SET vaccinated_status = 1 WHERE patient_id = ? AND vaccine_id = ?`;
+                await db.execute(SQL, [patient_id, vaccine_id]);
+
+                res.status(200).json({response_data : {}, message : "Patient's Vaccination Status Updated Successfully", status : 200});
+            } else {
+                res.status(404).json({response_data : {}, message : "This vaccine is not meant for this patient", status : 404});
+            }
+                        
+        } else {
+            res.status(401).json({response_data : {}, message : "You are not authorized to perform this operation", status : 401});
+        }
+
     } catch (catcherr) {
         throw catcherr;
     }
 }
 
+
 async function updateVaccineDetails(req, res) {
     try {
-        const logged_in_id = req?.query?.user_id || user_id;
+        
+        const logged_in_id = req?.query?.user_id || req.user.id;
         const vaccine_id = req.query.vaccine_id;
-        const doctor_id = req.query.doctor_id;
-
+        
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
-        const isUserSuperadmin = commonFunctions.isSuperAdmin(logged_in_user_role_id);
-        const isUserAdmin = commonFunctions.isAdmin(logged_in_user_role_id);
-
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+        
         if (!isUserSuperadmin && !isUserAdmin) {
             
             //Checking if this vaccine has been assigned to this doctor.
-            const isVaccineAssignedToThisDoctor = await commonFunctions.isVaccineAssignedToDoctor(vaccine_id, doctor_id);
+            const isVaccineAssignedToThisDoctor = await commonFunctions.isVaccineAssignedToDoctor(vaccine_id, logged_in_id);
             //Checking if this vaccine has been assigned to this doctor.
-
+            
             if ( isVaccineAssignedToThisDoctor ) {
                 const {
                     name, 
@@ -193,9 +215,11 @@ async function updateVaccineDetails(req, res) {
                 } = req.query;
     
                 const SQL = `UPDATE doctor_master_vaccine_details 
-                SET name = ?, description = ?, vaccine_range = ?, version_number = ?, is_mandatory = ?, status = ?, updated_date = ?, updated_by = ?`;
+                SET name = ?, description = ?, vaccine_range = ?, 
+                version_number = ?, is_mandatory = ?, status = ?, 
+                updated_date = ?, updated_by = ? WHERE id = ? AND doctor_id = ?`;
     
-                const values = [name, description, vaccine_range, version_number, is_mandatory, status, updated_date, updated_by];
+                const values = [name, description, vaccine_range, version_number, is_mandatory, status, updated_date, updated_by, vaccine_id, logged_in_id];
     
                 await db.execute(SQL, values);
     
@@ -255,5 +279,5 @@ module.exports = {
     getMasterVaccineTemplateList,
     getVaccineVersionList,
     updatePatientVaccinationStatus, //14-06-2024
-    updateVaccineDetails
+    updateVaccineDetails  //14-06-2024
 }
