@@ -10,6 +10,9 @@ vaccineRouter.post('/createmastervaccinedetails', vaccineController.createMaster
 vaccineRouter.get('/getvaccineversionlist', vaccineController.getVaccineVersionList);
 vaccineRouter.get('/getvaccinetemplatelist', vaccineController.getMasterVaccineTemplateList);
 // vaccineRouter.get('/calculatevaccineschedule', vaccineController.calculateVaccineSchedule);
+vaccineRouter.put('/updatepatientVaccinationstatus', vaccineController.updatePatientVaccinationStatus);
+
+vaccineRouter.put('/updatevaccinevetails', vaccineController.updateVaccineDetails);
 
 
 module.exports = vaccineRouter
