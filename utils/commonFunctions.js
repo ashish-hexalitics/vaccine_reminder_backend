@@ -329,7 +329,23 @@ async function calculateVaccineSchedule(patient_id) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+async function isVaccineAssignedToDoctor(doctor_id, vaccine_id) {
+    try {
+        const SQL = `SELECT count(id) FROM doctor_master_vaccine_details WHERE id = ? AND doctor_id = ?`;
+        const [result] = await db.execute(SQL, [vaccine_id, doctor_id]);
+
+        if( result.length > 0 ) {
+            return true;
+        } else {
+            return false;
+        }
+
+    } catch (catcherr) {
+        
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -345,5 +361,6 @@ module.exports={
     checkedDoctorByRoleId,
     checkValidUserId,
     calculateVaccineSchedule,
-    getUserRoleNameByRoleId
+    getUserRoleNameByRoleId,
+    isVaccineAssignedToDoctor,
 }

@@ -168,22 +168,41 @@ async function updateVaccineDetails(req, res) {
     try {
         const logged_in_id = req?.query?.user_id || user_id;
         const vaccine_id = req.query.vaccine_id;
+        const doctor_id = req.query.doctor_id;
 
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = commonFunctions.isSuperAdmin(logged_in_user_role_id);
         const isUserAdmin = commonFunctions.isAdmin(logged_in_user_role_id);
 
         if (!isUserSuperadmin && !isUserAdmin) {
-            const {name, description, vaccine_range, version_number, is_mandatory, status, updated_date, updated_by} = req.query;
+            
+            //Checking if this vaccine has been assigned to this doctor.
+            const isVaccineAssignedToThisDoctor = await commonFunctions.isVaccineAssignedToDoctor(vaccine_id, doctor_id);
+            //Checking if this vaccine has been assigned to this doctor.
 
-            const SQL = `UPDATE doctor_master_vaccine_details 
-            SET name = ?, description = ?, vaccine_range = ?, version_number = ?, is_mandatory = ?, status = ?, updated_date = ?, updated_by = ?`;
-
-            const values = [name, description, vaccine_range, version_number, is_mandatory, status, updated_date, updated_by];
-
-            await db.execute(SQL, values);
-
-            res.status(200).json({response_data : {}, message : "Vaccine details have been updated successfully", status : 200});
+            if ( isVaccineAssignedToThisDoctor ) {
+                const {
+                    name, 
+                    description, 
+                    vaccine_range, 
+                    version_number, 
+                    is_mandatory, 
+                    status, 
+                    updated_date, 
+                    updated_by
+                } = req.query;
+    
+                const SQL = `UPDATE doctor_master_vaccine_details 
+                SET name = ?, description = ?, vaccine_range = ?, version_number = ?, is_mandatory = ?, status = ?, updated_date = ?, updated_by = ?`;
+    
+                const values = [name, description, vaccine_range, version_number, is_mandatory, status, updated_date, updated_by];
+    
+                await db.execute(SQL, values);
+    
+                res.status(200).json({response_data : {}, message : "Vaccine details have been updated successfully", status : 200});
+            } else {
+                res.status(404).json({response_data : {}, message : "This vaccine has not been assigned to this doctor", status : 404});
+            }
         } else {
             res.status(401).json({response_data : {}, message : "You are not authorized to perform this operation", status : 401});
         }
