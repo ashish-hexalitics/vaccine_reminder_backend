@@ -203,7 +203,7 @@ async function getUserRoleNameByRoleId(user_role_id) {
         const SQL = `SELECT role_name FROM user_roles WHERE id = ?`;
 
         const formattedQuery = db.format(SQL, [user_role_id]);
-        console.log('Executing Query Commonfunctions:', formattedQuery);
+        // console.log('Executing Query Commonfunctions:', formattedQuery);
         const [result] = await db.execute(SQL, [user_role_id]);
         
         const user_role_name = result[0].role_name;

@@ -127,7 +127,7 @@ async function registerUser(req, res) {
                 }
 
                 const formattedQuery = db.format(SQL, values);
-                console.log('Executing Query:', formattedQuery);
+                // console.log('Executing Query:', formattedQuery);
                 
                 const [result] = await db.execute(SQL, values);
                 
@@ -219,9 +219,13 @@ async function forgotPassword(req, res) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 async function sendForgotPasswordEmail(email, token) {
+    const otpStore = {};
+    const otp = crypto.randomInt(100000, 999999).toString();
+
+    otpStore[email] = { otp, expires: Date.now() + 3600000 }; // OTP valid for 1 hour
     
     let transporter = nodemailer.createTransport({
-        
+    
         service: 'gmail',
         auth: {
             user: 'rupoliavasu2@gmail.com',
@@ -233,10 +237,34 @@ async function sendForgotPasswordEmail(email, token) {
         from: 'rupoliavasu2@gmail.com',
         to: email,
         subject: 'Reset Your Password',
-        text: `Click the following link to reset your password: http://localhost:${port}/reset-password?token=${token}`
+        text: `Your OTP for password reset is ${otp}`
     });
 
     console.log('Message sent: %s', info.messageId);
+}
+
+async function resetPassword(req, res) {
+    
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+        return res.status(400).json({ response_data : {}, message: 'Email, OTP, and new password are required', status : 400 });
+    }
+
+    // Check if the OTP is valid
+    const storedOtp = otpStore[email];
+    if (!storedOtp || storedOtp.otp !== otp || storedOtp.expires < Date.now()) {
+        return res.status(400).json({ response_data : {}, message: 'Invalid or expired OTP', status : 400 });
+    }
+
+    if( storedOtp.otp !== otp ) {
+        newPasswordEncrypted = await bcrypt.hash(password, 10);
+        const SQL = `UPDATE users SET password = ? WHERE email = ?`;
+        await db.execute(SQL, [newPasswordEncrypted, email]);
+
+        return res.status(400).json({ error: 'Invalid or expired OTP' });
+    }
+    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -301,7 +329,7 @@ async function login(req, res) {
         WHERE email = ? AND users.status = 1`;
         
         const [result] = await db.execute(SQL, [email]);
-        console.log(result);
+        // console.log(result);
         if (result.length === 0) {
             return res.status(400).json({ 
                 response_data : {},
@@ -610,7 +638,7 @@ async function getAllDoctors(req, res) {
                        WHERE users.role_id = user_roles.id 
                        AND user_roles.role_name = 'Doctor' 
                        AND users.status = 1`;
-                       console.log("inside if");
+                    //    console.log("inside if");
             } else {
                 // Admin can see only the doctors they registered
                 SQL = `SELECT users.id, name, email, date_of_birth FROM users 
@@ -624,7 +652,7 @@ async function getAllDoctors(req, res) {
             const values = isUserSuperadmin ? [] : [logged_in_id];
 
             const formattedQuery = db.format(SQL, values);
-            console.log(formattedQuery);
+            // console.log(formattedQuery);
 
             const [result] = await db.execute(SQL, values);
             if (result.length > 0) {
