@@ -593,26 +593,46 @@ async function getAllClinicInfo(req, res) {
 async function getAllDoctors(req, res) {
     try{
         
-        const logged_in_id =req?.query?.logged_in_id || req.user.id;;
+        const logged_in_id =req?.query?.logged_in_id || req.user.id;
 
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
-        const isUserSuperadmin = commonFunctions.isSuperAdmin(logged_in_user_role_id);
-
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        
         var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, 'Doctor', 'read_permission');
 
         if( isUserSuperadmin || permissions[0].read_permission == 1 ) {
 
-            const SQL = `SELECT users.id, name, email, date_of_birth FROM users 
-            INNER JOIN user_roles ON user_roles.id = role_id 
-            WHERE users.role_id = user_roles.id AND user_roles.role_name = 'Doctor' AND users.status = 1`;
-
-            [result] = await db.execute(SQL);
-            
-            if(result.length > 0) {
-                return res.status(200).json({response_data : result, message : "All doctors info", status : 200});
+            let SQL;
+            if (isUserSuperadmin) {
+                // Superadmin can see all doctors
+                SQL = `SELECT users.id, name, email, date_of_birth FROM users 
+                       INNER JOIN user_roles ON user_roles.id = role_id 
+                       WHERE users.role_id = user_roles.id 
+                       AND user_roles.role_name = 'Doctor' 
+                       AND users.status = 1`;
+                       console.log("inside if");
             } else {
-                return res.status(404).json({response_data : {}, message : "No doctor found", status : 404});
+                // Admin can see only the doctors they registered
+                SQL = `SELECT users.id, name, email, date_of_birth FROM users 
+                       INNER JOIN user_roles ON user_roles.id = role_id 
+                       WHERE users.role_id = user_roles.id 
+                       AND user_roles.role_name = 'Doctor' 
+                       AND users.status = 1 
+                       AND users.parent_id = ?`;
             }
+
+            const values = isUserSuperadmin ? [] : [logged_in_id];
+
+            const formattedQuery = db.format(SQL, values);
+            console.log(formattedQuery);
+
+            const [result] = await db.execute(SQL, values);
+            if (result.length > 0) {
+                return res.status(200).json({ response_data: result, message: "All doctors info", status: 200 });
+            } else {
+                return res.status(404).json({ response_data: {}, message: "No doctor found", status: 404 });
+            }
+
         } else {
             return res.status(401).json({response_data : {}, message : "You are not authorized to perform this operation", status : 401});
         }

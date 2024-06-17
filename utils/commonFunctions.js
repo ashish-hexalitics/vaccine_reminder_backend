@@ -8,8 +8,6 @@ async function isSuperAdmin(user_role_id) {
         const [result] = await db.execute(`SELECT role_name FROM user_roles WHERE id = ?`, [user_role_id]);
     
         if(result.length > 0){
-            // console.log("result " + result);
-
             const role_name = result[0].role_name;
             if (role_name.toLowerCase() === 'superadmin') {
                 return true;
