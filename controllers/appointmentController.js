@@ -4,13 +4,13 @@ const commonFunctions = require('../utils/commonFunctions');
 async function bookAppointment(req, res) {
     try {
 
-        const {appointment_booked_by, user_id, appointment_time, appointment_date, created_by, created_date} = req.body;
+        const {appointment_booked_by, patient_id, appointment_time, appointment_date, created_by, created_date} = req.body;
         const user_role_id = await commonFunctions.getUserRoleIdByUserId(appointment_booked_by);
-        const permissions = await commonFunctions.checkPermission(user_role_id, 'appointments', 'create_permission');
+        const permissions = await commonFunctions.checkPermission(user_role_id, 'appointment', 'create_permission');
         
         if(permissions[0].create_permission == 1) {
-            const SQL = `INSERT INTO appointments (appointment_booked_by, user_id, appointment_time, appointment_date, created_by, created_date) VALUES (?,?,?,?,?,?)`;
-            const values = [appointment_booked_by, user_id, appointment_time, appointment_date, created_by, created_date];
+            const SQL = `INSERT INTO appointments (appointment_booked_by, patient_id, appointment_time, appointment_date, created_by, created_date) VALUES (?,?,?,?,?,?)`;
+            const values = [appointment_booked_by, patient_id, appointment_time, appointment_date, created_by, created_date];
             
             await db.execute(SQL, values);
             return res.status(200).json({ response_data : {}, message: 'Appointment booked successfully', status : 200 });
