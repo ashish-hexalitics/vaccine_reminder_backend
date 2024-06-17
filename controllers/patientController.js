@@ -80,6 +80,22 @@ async function registerPatient(req, res) {
     
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+//Need to purchase SMS's as patient can login through mobile number but there is no password for a patient. So need to implement OTP based login
+
+// async function login(req, res) {
+//     try {
+//         const {mobile_number, password} = req.body;
+//         const SQL = 'SELECT name, gender, date_of_birth, vaccine_ids FROM patients WHERE '
+//     } catch (catcherr) {
+        
+//     }
+// }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 async function getAllActivePatients(req, res) {
 
     //Intended to be used by Admins and the Superadmin
@@ -99,6 +115,8 @@ async function getAllActivePatients(req, res) {
         console.log(catcherr)
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 async function editPatient(req, res) {
     try{
@@ -127,6 +145,8 @@ async function editPatient(req, res) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 async function deletePatient(req, res) {
     try {
         const {logged_in_id, patient_id} = req.body;
@@ -149,9 +169,34 @@ async function deletePatient(req, res) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+async function viewUpcomingAppointments(req, res) {
+    try {
+        const logged_in_id = req?.query?.logged_in_id ||req.user.id;
+        const today = new Date();
+        const formattedToday = today.toISOString().split('T')[0];
+
+        const SQL = `SELECT appointment_booked_by, appointment_time, prescription_details FROM appointments 
+        WHERE patient_id = ? AND appointment_date > ? AND is_completed = ?`;
+
+        [result] = await db.execute(SQL, [logged_in_id, formattedToday, 0]);
+
+        if( result.length > 0 ) {
+            res.status(200).json({response_data : result[0], message : 'List of upcoming appointments', status : 200});
+        } else {
+            res.status(404).json({response_data : {}, message : 'No upcoming appointments found', status : 404});
+        }
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
 module.exports = {
     registerPatient,
     getAllActivePatients,
     editPatient,
     deletePatient,
+    viewUpcomingAppointments
 }

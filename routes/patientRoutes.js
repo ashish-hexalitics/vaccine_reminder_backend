@@ -6,6 +6,9 @@ const patientRouter = express.Router();
 
 patientRouter.post('/registerpatient', patientController.registerPatient);
 patientRouter.get('/getallpatients', patientController.getAllActivePatients);
+patientRouter.get('/viewupcomingappointments', patientController.viewUpcomingAppointments);
+
+
 
 
 
