@@ -13,7 +13,7 @@ async function createPermission(req, res) {
     try {
         const {logged_in_id, user_role_id, module, create_permission, read_permission, update_permission, delete_permission, created_by, created_date} = req.body;
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
-        const isUserSuperadmin = commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
         
         if( isUserSuperadmin ) {
             const SQL = `INSERT INTO permissions (user_role_id, module, create_permission, 
@@ -89,7 +89,7 @@ async function registerUser(req, res) {
         }
 
         if ( !isUserSuperadmin ) {
-            var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'create_permission');
+            var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, registeredUserRoleName, 'create_permission');
             if(permissions[0].create_permission == 1) {
                 canCreate = true;
             } else {
@@ -250,7 +250,7 @@ async function resetPassword(req, res) {
         return res.status(400).json({ response_data : {}, message: 'Email, OTP, and new password are required', status : 400 });
     }
 
-    // Check if the OTP is valid
+    // Checking if the OTP is valid
     const storedOtp = otpStore[email];
     if (!storedOtp || storedOtp.otp !== otp || storedOtp.expires < Date.now()) {
         return res.status(400).json({ response_data : {}, message: 'Invalid or expired OTP', status : 400 });
@@ -428,7 +428,7 @@ async function getStaffList(req, res) {
         const logged_in_id = req.query.logged_in_id;
 
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
-        const isUserSuperadmin = commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
         var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'read_permission');
 
@@ -461,12 +461,57 @@ async function getStaffList(req, res) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 async function deleteStaff(req, res) {
-    
-    const user_id = req.body.user_id;
     try{
-        const SQL = `UPDATE users SET status = 0 WHERE id = ? AND role_id NOT IN (1,2)`;
-        await db.execute(SQL, [user_id]);
-        res.status(200).json({response_data : {}, message : "Deleted Successfully", status : 200})
+
+        const logged_in_id = req?.body?.logged_in_id || req.user.id; 
+        const user_id = req.body.user_id;
+
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+        const isUserDoctor = await commonFunctions.isDoctor(logged_in_user_role_id);
+        let SQL;
+        
+        if( isUserSuperadmin ) {
+            SQL = `UPDATE users SET status = 0 WHERE id = ? AND role_id NOT IN (1,2)`;
+            await db.execute(SQL, [user_id]);
+            res.status(200).json({response_data : {}, message : "Deleted Successfully", status : 200});
+        } else if( isUserAdmin ) {
+            SQL = `WITH admin_id AS (
+                SELECT id
+                FROM users
+                WHERE role_id = (SELECT id FROM user_roles WHERE role_name = 'admin')
+                  AND name = 'Admin A'
+            ),
+            admin_doctors AS (
+                SELECT u.id
+                FROM users u
+                JOIN admin_id a ON u.parent_id = a.id
+                WHERE u.role_id = (SELECT id FROM user_roles WHERE role_name = 'Doctor')
+            ),
+            admin_staff AS (
+                SELECT u.id
+                FROM users u
+                JOIN admin_id a ON u.parent_id = a.id
+                WHERE u.role_id = (SELECT id FROM user_roles WHERE role_name = 'Staff')
+            ),
+            doctor_staff AS (
+                SELECT u.id
+                FROM users u
+                WHERE u.parent_id IN (SELECT id FROM admin_doctors)
+                  AND u.role_id = (SELECT id FROM user_roles WHERE role_name = 'Staff')
+            )
+            UPDATE users SET status = 0
+            WHERE id = ?
+              AND (id IN (SELECT id FROM admin_staff) OR id IN (SELECT id FROM doctor_staff));
+            `;
+        } else if( isUserDoctor ) {
+
+        } else{
+            res.status(401).json({response_data : {}, message : "You are not authorized to perform this operation", status : 401});
+        }
+
+        
             
     } catch( catcherr ) {
         console.log(catcherr)
@@ -482,7 +527,7 @@ async function viewAllAdmins(req, res) {
         const to_search = 'admin';
         const logged_in_id = req?.query?.logged_in_id || req.user.id;
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
-        const isUserSuperadmin = commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
         
         if(isUserSuperadmin) {
             const SQL1 = `SELECT id FROM user_roles WHERE role_name = ?`;
@@ -521,7 +566,7 @@ async function editAdmin(req, res) {
         const logged_in_id = req?.body?.logged_in_id || req.user.id;;
         const {admin_id, name, email, date_of_birth, mobile_number, status} = req.body;
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
-        const isUserSuperadmin = commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
         
         if( isUserSuperadmin ) {
             const SQL = `UPDATE users SET name = ?, email = ?, date_of_birth = ?, mobile_number = ?, status = ? WHERE id = ?`;
@@ -767,7 +812,7 @@ async function deleteAdmin(req,res) {
 
         const {admin_id} = req.body;
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
-        const isUserSuperadmin = commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
         
         if( isUserSuperadmin ) {
             const SQL = `UPDATE users SET status = 0 WHERE id = ?`;

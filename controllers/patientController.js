@@ -124,7 +124,7 @@ async function editPatient(req, res) {
         const {logged_in_id, id, name, gender, date_of_birth, status} =req.body;
 
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
-        const isUserSuperadmin = commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
         var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'create_permission');
 
@@ -151,7 +151,7 @@ async function deletePatient(req, res) {
     try {
         const {logged_in_id, patient_id} = req.body;
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
-        const isUserSuperadmin = commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
         var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'delete_permission');
 

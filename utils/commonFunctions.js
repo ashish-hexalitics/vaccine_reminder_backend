@@ -44,6 +44,25 @@ async function isAdmin(user_role_id) {
     
 }
 
+async function isDoctor(user_role_id) {
+    try{
+        const [result] = await db.execute(`SELECT role_name FROM user_roles WHERE id = ?`, [user_role_id]);
+        
+        if(result.length > 0){
+            const role_name = result[0].role_name;
+            if (role_name.toLowerCase() === 'doctor') {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return 0;
+        }
+    } catch(catcherr) {
+        throw catcherr;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function auth(req,res,next){

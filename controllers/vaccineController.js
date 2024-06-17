@@ -134,7 +134,7 @@ async function getMasterVaccineTemplateList(req, res) {
         const isUserSuperAdmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
         if( isUserAdmin || isUserSuperAdmin ) {
-            const SQL = `SELECT name, vaccine_range, is_mandatory, created_by, created_date FROM master_vaccine`;
+            const SQL = `SELECT id, name, vaccine_range, is_mandatory, created_by, created_date FROM master_vaccine`;
             const result = await db.execute(SQL);
 
             if( result.length > 0 ) {
