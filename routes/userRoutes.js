@@ -17,6 +17,7 @@ const apiKeyMiddleware = require('../middlewares/apiKeyMiddleware');
 
 userRouter.post('/login', apiKeyMiddleware, userController.login);
 userRouter.post('/resetpassword', userController.resetPassword);
+userRouter.post('/sendchangepasswordotp', userController.forgotPassword);
 
 userRouter.use(jwtMiddleware);
 
@@ -36,7 +37,7 @@ userRouter.post('/getalldoctors', userController.getAllDoctors);
 userRouter.post('/viewdoctorprofile', commonFunctions.authenticateToken, userController.getDoctorProfile);
 userRouter.get('/testtoken', userController.testToken);
 userRouter.post('/setdoctortimeslots', userController.setDoctorTimeSlots);
-userRouter.post('/forgotpassword', userController.forgotPassword);
+
 userRouter.post('/rememberme', userController.rememberMe);
 userRouter.post('/createpermission', userController.createPermission);
 userRouter.post('/editstaff', userController.editStaff);
