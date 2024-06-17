@@ -245,7 +245,7 @@ async function sendForgotPasswordEmail(email, token) {
     });
 
     console.log('Message sent: %s', info.messageId);
-    console.log("OtpStore", otpStore);
+    
 }
 
 async function resetPassword(req, res) {
@@ -258,9 +258,6 @@ async function resetPassword(req, res) {
     // Checking if the OTP is valid
     const storedOtp = otpStore[email];
 
-    console.log("stored otp", storedOtp);
-    console.log("req otp", otp);
-
     if (!storedOtp || storedOtp.otp !== otp || storedOtp.expires < Date.now()) {
         return res.status(400).json({ response_data : {}, message: 'Invalid or expired OTP', status : 400 });
     }
@@ -269,7 +266,7 @@ async function resetPassword(req, res) {
         newPasswordEncrypted = await bcrypt.hash(new_password, 10);
         const SQL = `UPDATE users SET password = ? WHERE email = ?`;
         const formattedQ = db.format(SQL, [newPasswordEncrypted, email]);
-        console.log(formattedQ);
+        // console.log(formattedQ);
         await db.execute(SQL, [newPasswordEncrypted, email]);
 
         return res.status(200).json({response_data :{} , message : 'Password has changed successfully', status : 200 });
