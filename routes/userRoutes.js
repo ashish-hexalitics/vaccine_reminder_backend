@@ -16,6 +16,7 @@ const apiKeyMiddleware = require('../middlewares/apiKeyMiddleware');
 // app.use(cors(corsOptions));
 
 userRouter.post('/login', apiKeyMiddleware, userController.login);
+userRouter.post('/resetpassword', userController.resetPassword);
 
 userRouter.use(jwtMiddleware);
 
@@ -44,6 +45,9 @@ userRouter.get('/testscheduling', userController.testScheduling);
 
 
 userRouter.get('/testting', userController.testting);
+
+
+
 // userRouter.get('/getallroles', userController.getAllRoles);
 
 

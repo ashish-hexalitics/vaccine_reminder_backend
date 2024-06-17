@@ -7,6 +7,10 @@ const jwt = require('jsonwebtoken');
 
 const port = process.env.PORT || 8071;
 
+// Global object
+const otpStore = {};
+// Global object
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 async function createPermission(req, res) {
@@ -219,7 +223,7 @@ async function forgotPassword(req, res) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 async function sendForgotPasswordEmail(email, token) {
-    const otpStore = {};
+    
     const otp = crypto.randomInt(100000, 999999).toString();
 
     otpStore[email] = { otp, expires: Date.now() + 3600000 }; // OTP valid for 1 hour
@@ -241,27 +245,34 @@ async function sendForgotPasswordEmail(email, token) {
     });
 
     console.log('Message sent: %s', info.messageId);
+    console.log("OtpStore", otpStore);
 }
 
 async function resetPassword(req, res) {
     
-    const { email, otp, newPassword } = req.body;
-    if (!email || !otp || !newPassword) {
+    const { email, otp, new_password } = req.body;
+    if (!email || !otp || !new_password) {
         return res.status(400).json({ response_data : {}, message: 'Email, OTP, and new password are required', status : 400 });
     }
 
     // Checking if the OTP is valid
     const storedOtp = otpStore[email];
+
+    console.log("stored otp", storedOtp);
+    console.log("req otp", otp);
+
     if (!storedOtp || storedOtp.otp !== otp || storedOtp.expires < Date.now()) {
         return res.status(400).json({ response_data : {}, message: 'Invalid or expired OTP', status : 400 });
     }
 
-    if( storedOtp.otp !== otp ) {
-        newPasswordEncrypted = await bcrypt.hash(password, 10);
+    if( storedOtp.otp === otp ) {
+        newPasswordEncrypted = await bcrypt.hash(new_password, 10);
         const SQL = `UPDATE users SET password = ? WHERE email = ?`;
+        const formattedQ = db.format(SQL, [newPasswordEncrypted, email]);
+        console.log(formattedQ);
         await db.execute(SQL, [newPasswordEncrypted, email]);
 
-        return res.status(400).json({ error: 'Invalid or expired OTP' });
+        return res.status(200).json({response_data :{} , message : 'Password has changed successfully', status : 200 });
     }
     
 
@@ -878,5 +889,6 @@ module.exports = {
 
     getUserRoles,
     testting,
-    testScheduling
+    testScheduling,
+    resetPassword
 }
