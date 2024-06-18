@@ -470,8 +470,8 @@ async function getStaffList(req, res) {
 
 async function deleteStaff(req, res) {
     try{
-
-        const logged_in_id = req?.body?.logged_in_id || req.user.id; 
+        //test comment
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
         const user_id = req.body.user_id;
 
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
