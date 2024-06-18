@@ -428,37 +428,102 @@ async function getAUser(req, res) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// async function getStaffList(req, res) {
+    
+//     try {
+
+//         // const admin_id = req?.query?.admin_id || req.user.id;
+//         const logged_in_id = req?.query?.logged_in_id || req.user.id;
+
+//         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+//         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+
+//         var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'read_permission');
+
+//         if( isUserSuperadmin || permissions[0].read_permission == 1 ) {
+//             // const SQL = `SELECT * FROM users WHERE role_id = ? AND admin_id = ? AND status = 1`;
+
+//             const SQL = `WITH RECURSIVE AdminHierarchy AS ( 
+//                             SELECT id, parent_id FROM users WHERE id = ?
+//                             UNION ALL SELECT u.id, u.parent_id FROM users u JOIN AdminHierarchy ah ON u.parent_id = ah.id 
+//                         ) SELECT u.* FROM users u JOIN AdminHierarchy ah ON u.parent_id = ah.id 
+//                         JOIN user_roles ur ON u.role_id = ur.id 
+//                         WHERE ur.role_name = 'Staff'`;
+
+//             const [result] = await db.execute(SQL, [admin_id]);
+                
+//             if( result.length == 0 ) {
+//                 res.status(404).json({response_data : {}, message : 'No user found', status : 404})    
+//             } else {
+//                 res.status(200).json({response_data : result, message : 'Staff fetched successfully', status : 200})
+//             }
+//         } else {
+//             res.status(401).json({response_data : result, message : 'You are not authorized to perform this operation', status : 401})
+//         }
+        
+//     } catch( catcherr ) {
+//         console.log(catcherr)
+//     }
+// }
+
 async function getStaffList(req, res) {
     
     try {
 
-        const admin_id = req?.query?.admin_id || req.user.id;;
-        const logged_in_id = req.query.logged_in_id;
+        const logged_in_id = req?.query?.logged_in_id || req.user.id;
 
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = await commonFunctions.isUserAdmin( logged_in_user_role_id );
+        const isUserDoctor = await commonFunctions.isUserDoctor( logged_in_user_role_id );
+
+        var isAuthenticated = false;
 
         var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'read_permission');
+        let SQL;
+        
+        if( isUserSuperadmin) {
+            
+            SQL = `SELECT * FROM users WHERE role_id = (SELECT id FROM user_roles WHERE role_name = 'Staff')`;
+            const [result] = await db.execute(SQL);
+            isAuthenticated = true;
+        
+        } else if( isUserAdmin && permissions[0].read_permission == 1 ) {
+            
+            SQL = `WITH RECURSIVE AdminDoctors AS (
+                        SELECT u.id, u.parent_id
+                        FROM users u
+                        WHERE u.role_id = (SELECT id FROM user_roles WHERE role_name = 'Doctor')
+                        AND u.parent_id = $1
+                    ),
+                    DoctorStaff AS (
+                        SELECT u.*
+                        FROM users u
+                        JOIN AdminDoctors d ON u.parent_id = d.id
+                        WHERE u.role_id = (SELECT id FROM user_roles WHERE role_name = 'staff')
+                    )
+                    SELECT *
+                    FROM DoctorStaff;
+                `;
+            const [result] = await db.execute(SQL, logged_in_id);
+            isAuthenticated = true;
 
-        if( isUserSuperadmin || permissions[0].read_permission == 1 ) {
-            // const SQL = `SELECT * FROM users WHERE role_id = ? AND admin_id = ? AND status = 1`;
+        } else if ( isUserDoctor && permissions[0].read_permission == 1 ) {
+            
+            SQL = `SELECT * FROM users WHERE role_id = (SELECT id FROM user_roles WHERE role_name = 'Staff') AND parent_id = ?`;
+            const [result] = await db.execute(SQL, [logged_in_id]);
+            isAuthenticated = true;
 
-            const SQL = `WITH RECURSIVE AdminHierarchy AS ( 
-                            SELECT id, parent_id FROM users WHERE id = ?
-                            UNION ALL SELECT u.id, u.parent_id FROM users u JOIN AdminHierarchy ah ON u.parent_id = ah.id 
-                        ) SELECT u.* FROM users u JOIN AdminHierarchy ah ON u.parent_id = ah.id 
-                        JOIN user_roles ur ON u.role_id = ur.id 
-                        WHERE ur.role_name = 'Staff'`;
+        }
 
-            const [result] = await db.execute(SQL, [admin_id]);
-                
-            if( result.length == 0 ) {
-                res.status(404).json({response_data : {}, message : 'No user found', status : 404})    
-            } else {
-                res.status(200).json({response_data : result, message : 'Staff fetched successfully', status : 200})
-            }
+        if( !isAuthenticated ) {
+            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401})
+        }
+
+        if( result.length == 0 ) {
+            res.status(404).json({response_data : {}, message : 'No user found', status : 404})    
         } else {
-            res.status(401).json({response_data : result, message : 'You are not authorized to perform this operation', status : 401})
+            res.status(200).json({response_data : result, message : 'Staff fetched successfully', status : 200})
         }
         
     } catch( catcherr ) {
@@ -489,7 +554,6 @@ async function deleteStaff(req, res) {
                 SELECT id
                 FROM users
                 WHERE role_id = (SELECT id FROM user_roles WHERE role_name = 'admin')
-                  AND name = 'Admin A'
             ),
             admin_doctors AS (
                 SELECT u.id
@@ -497,18 +561,6 @@ async function deleteStaff(req, res) {
                 JOIN admin_id a ON u.parent_id = a.id
                 WHERE u.role_id = (SELECT id FROM user_roles WHERE role_name = 'Doctor')
             ),
-            admin_staff AS (
-                SELECT u.id
-                FROM users u
-                JOIN admin_id a ON u.parent_id = a.id
-                WHERE u.role_id = (SELECT id FROM user_roles WHERE role_name = 'Staff')
-            ),
-            doctor_staff AS (
-                SELECT u.id
-                FROM users u
-                WHERE u.parent_id IN (SELECT id FROM admin_doctors)
-                  AND u.role_id = (SELECT id FROM user_roles WHERE role_name = 'Staff')
-            )
             UPDATE users SET status = 0
             WHERE id = ?
               AND (id IN (SELECT id FROM admin_staff) OR id IN (SELECT id FROM doctor_staff));
@@ -571,14 +623,15 @@ async function viewAllAdmins(req, res) {
 async function editAdmin(req, res) {
 
     try{
-        const logged_in_id = req?.body?.logged_in_id || req.user.id;;
-        const {admin_id, name, email, date_of_birth, mobile_number, status} = req.body;
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        const {user_id, name, email, date_of_birth, mobile_number, status} = req.body;
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
         
         if( isUserSuperadmin ) {
+            
             const SQL = `UPDATE users SET name = ?, email = ?, date_of_birth = ?, mobile_number = ?, status = ? WHERE id = ?`;
-            await db.execute(SQL, [name, email, date_of_birth, mobile_number, status, admin_id]);
+            await db.execute(SQL, [name, email, date_of_birth, mobile_number, status, user_id]);
             res.status(200).json({response_data : {}, message : "Admin Updated Successfully", status : 200})
                 
         } else {
@@ -853,6 +906,10 @@ async function getUserRoles(req, res) {
 
 async function testScheduling(req, res) {
     const result = await commonFunctions.calculateVaccineSchedule(2);
+}
+
+async function staffListUnderAdmin() {
+
 }
 
 module.exports = {
