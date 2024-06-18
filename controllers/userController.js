@@ -137,7 +137,7 @@ async function registerUser(req, res) {
                 
                 const newUserId = result.insertId;
                 const isRegisteredUserDoctor = await commonFunctions.checkedDoctorByRoleId(role_id);
-
+                // const registeredUserRoleName = await commonFunctions.getUserRoleNameByRoleId(role_id);
                 if ( isRegisteredUserDoctor ) {
 
                     const copySQL1 = `INSERT INTO doctor_master_vaccine (doctor_id, name, description, vaccine_range, 
@@ -158,6 +158,12 @@ async function registerUser(req, res) {
                     await db.execute(copySQL2, [newUserId]);
 
                 }
+
+                // if( registeredUserRoleName === 'staff' ) {
+                //     if( staffPermission == true ) {
+                //         const {create_permission, read_permission, update_permission, delete_permission} = req.body;
+                //     }
+                // }
 
                 return res.status(200).json({
                     response_data : {}, 
@@ -328,15 +334,15 @@ function testToken() {
 // }
 
 async function login(req, res) {
-    const email = req.body.email;
+    const email_or_number = req.body.email;
     const password = req.body.password;
 
     try {
         const SQL = `SELECT users.id, role_id, parent_id, name, email, password, mobile_number, role_name FROM users 
         INNER JOIN user_roles ON users.role_id = user_roles.id 
-        WHERE email = ? AND users.status = 1`;
+        WHERE (email = ? OR mobile_number = ?) AND users.status = 1`;
         
-        const [result] = await db.execute(SQL, [email]);
+        const [result] = await db.execute(SQL, [email_or_number, email_or_number]);
         // console.log(result);
         if (result.length === 0) {
             return res.status(400).json({ 
@@ -629,7 +635,7 @@ async function editAdmin(req, res) {
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
         
         if( isUserSuperadmin ) {
-            
+
             const SQL = `UPDATE users SET name = ?, email = ?, date_of_birth = ?, mobile_number = ?, status = ? WHERE id = ?`;
             await db.execute(SQL, [name, email, date_of_birth, mobile_number, status, user_id]);
             res.status(200).json({response_data : {}, message : "Admin Updated Successfully", status : 200})
