@@ -415,7 +415,7 @@ async function getAUser(req, res) {
 
     try{
         const user_id = req.query.user_id;
-        const SQL = `SELECT u.id, u.role_id, ur.role_name, u.parent_id, u.name, u.email, u.date_of_birth FROM users u 
+        const SQL = `SELECT u.id, u.role_id, ur.role_name, u.parent_id, u.name, u.email, u.date_of_birth, u.mobile_number FROM users u 
         INNER JOIN user_roles ur ON u.role_id = ur.id 
         WHERE u.id = ? AND u.status = 1`;
         const [result] = await db.execute(SQL, [user_id]);
