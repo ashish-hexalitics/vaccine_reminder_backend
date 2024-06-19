@@ -932,10 +932,12 @@ async function getUserList(req, res) {
         if( role_id != 0 ) {
             if( isUserSuperadmin ) {
                 const SQL = `SELECT * FROM users WHERE role_id = ?`;
+                const formattedQ = db.format(SQL, [role_id]);
+                console.log(formattedQ)
                 const [result] = await db.execute(SQL, [role_id]);
 
                 if ( result.length > 0 ) {
-                    res.status(200).json({response_data : result[0], message : 'All Users of this role', status : 200});
+                    res.status(200).json({response_data : result, message : 'All Users of this role', status : 200});
                 } else {
                     res.status(404).json({response_data : {}, message : 'No users found', status : 404});
                 }
