@@ -918,6 +918,39 @@ async function staffListUnderAdmin() {
 
 }
 
+async function getUserList(req, res) {
+    
+    try {
+
+        const logged_in_id = req?.query?.logged_in_id || req.user.id;
+        // const user_role_id = req.query.user_role_id;
+        const role_name = req.query.role_name;
+        const role_id = await commonFunctions.getRoleIdByRoleName(role_name);
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+
+        if( role_id != 0 ) {
+            if( isUserSuperadmin ) {
+                const SQL = `SELECT * FROM users WHERE role_id = ?`;
+                const [result] = await db.execute(SQL, [user_role_id]);
+
+                if ( result.length > 0 ) {
+                    res.status(200).json({response_data : result[0], message : 'All Users of this role', status : 200});
+                } else {
+                    res.status(404).json({response_data : {}, message : 'No users found', status : 404});
+                }
+            } else {
+                res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            }
+        } else {
+            res.status(404).json({response_data : {}, message : 'This role name is not found', status : 404});
+        }
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
 module.exports = {
     registerUser, 
     login,
@@ -950,5 +983,6 @@ module.exports = {
     getUserRoles,
     testting,
     testScheduling,
-    resetPassword
+    resetPassword,
+    getUserList,
 }

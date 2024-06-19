@@ -172,7 +172,7 @@ async function getUserRoleIdByUserId(user_id){
 
 async function getRoleIdByRoleName(role_name){
     try {
-        const SQL = `SELECT id FROM user_roles WHERE role_name = ?`;
+        const SQL = `SELECT id FROM user_roles WHERE LOWER(role_name) = LOWER(?);`;
         const [rows] = await db.execute(SQL, [role_name]);
 
         if(rows && rows.length > 0) {

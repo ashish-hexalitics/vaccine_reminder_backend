@@ -43,7 +43,7 @@ userRouter.post('/createpermission', userController.createPermission);
 userRouter.post('/editstaff', userController.editStaff);
 userRouter.get('/getuserroles', userController.getUserRoles);
 userRouter.get('/testscheduling', userController.testScheduling);
-
+userRouter.get('/getuserlist', userController.getUserList);
 
 userRouter.get('/testting', userController.testting);
 
