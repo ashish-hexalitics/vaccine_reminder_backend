@@ -108,7 +108,26 @@ async function getDashboardCounts (req, res) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+async function getModules(req, res) {
+    try {
+        const SQL = `SELECT id, module_name FROM modules`;
+        const [result] = await db.execute(SQL);
+
+        if( result.length > 0 ) {
+            res.status(200).json({response_data : result, message : 'List of all modules', status : 200});
+        } else {
+            res.status(404).json({response_data : {}, message : 'No module found', status : 404});
+        }
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 module.exports = {
     getTotalCount,
-    getDashboardCounts
+    getDashboardCounts,
+    getModules
 }

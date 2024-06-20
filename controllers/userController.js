@@ -500,7 +500,7 @@ async function getStaffList(req, res) {
                         SELECT u.id, u.parent_id
                         FROM users u
                         WHERE u.role_id = (SELECT id FROM user_roles WHERE role_name = 'Doctor')
-                        AND u.parent_id = $1
+                        AND u.parent_id = ?
                     ),
                     DoctorStaff AS (
                         SELECT u.*
@@ -511,7 +511,7 @@ async function getStaffList(req, res) {
                     SELECT *
                     FROM DoctorStaff;
                 `;
-            [result] = await db.execute(SQL, logged_in_id);
+            [result] = await db.execute(SQL, [logged_in_id]);
             isAuthenticated = true;
 
         } else if ( isUserDoctor && permissions[0].read_permission == 1 ) {
@@ -1002,4 +1002,5 @@ module.exports = {
     getUserList,
 
     grantBulkPermission,
+
 }
