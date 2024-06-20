@@ -390,6 +390,7 @@ module.exports={
     auth,
     isSuperAdmin,
     isAdmin,
+    isDoctor,
     isEmailAlreadyRegistered,
     authenticateToken,
     checkPermission,

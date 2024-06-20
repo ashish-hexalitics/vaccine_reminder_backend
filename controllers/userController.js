@@ -480,18 +480,18 @@ async function getStaffList(req, res) {
 
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
-        const isUserAdmin = await commonFunctions.isUserAdmin( logged_in_user_role_id );
-        const isUserDoctor = await commonFunctions.isUserDoctor( logged_in_user_role_id );
+        const isUserAdmin = await commonFunctions.isAdmin( logged_in_user_role_id );
+        const isUserDoctor = await commonFunctions.isDoctor( logged_in_user_role_id );
 
         var isAuthenticated = false;
 
-        var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'read_permission');
+        var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, 'staff', 'read_permission');
         let SQL;
-        
+        let result;
         if( isUserSuperadmin) {
             
             SQL = `SELECT * FROM users WHERE role_id = (SELECT id FROM user_roles WHERE role_name = 'Staff')`;
-            const [result] = await db.execute(SQL);
+            [result] = await db.execute(SQL);
             isAuthenticated = true;
         
         } else if( isUserAdmin && permissions[0].read_permission == 1 ) {
@@ -511,13 +511,13 @@ async function getStaffList(req, res) {
                     SELECT *
                     FROM DoctorStaff;
                 `;
-            const [result] = await db.execute(SQL, logged_in_id);
+            [result] = await db.execute(SQL, logged_in_id);
             isAuthenticated = true;
 
         } else if ( isUserDoctor && permissions[0].read_permission == 1 ) {
             
             SQL = `SELECT * FROM users WHERE role_id = (SELECT id FROM user_roles WHERE role_name = 'Staff') AND parent_id = ?`;
-            const [result] = await db.execute(SQL, [logged_in_id]);
+            [result] = await db.execute(SQL, [logged_in_id]);
             isAuthenticated = true;
 
         }
@@ -958,6 +958,14 @@ async function getUserList(req, res) {
     }
 }
 
+async function grantBulkPermission(req, res) {
+    try {
+        const {} = req.body;
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
 module.exports = {
     registerUser, 
     login,
@@ -992,4 +1000,6 @@ module.exports = {
     testScheduling,
     resetPassword,
     getUserList,
+
+    grantBulkPermission,
 }
