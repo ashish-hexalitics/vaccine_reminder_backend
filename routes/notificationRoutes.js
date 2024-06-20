@@ -2,7 +2,7 @@ const notificationController = require('../controllers/notificationController');
 const express = require('express');
 const notificationRouter = express.Router();
 
-notificationRouter.post('/sendnotification', notificationController.sendNotification);
-notificationRouter.get('/viewallnotifications', notificationController.viewAllNotifications);
+notificationRouter.post('/send_notification', notificationController.sendNotification);
+notificationRouter.get('/view_all_notifications', notificationController.viewAllNotifications);
 
 module.exports = notificationRouter;

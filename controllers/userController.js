@@ -877,15 +877,17 @@ async function deleteAdmin(req,res) {
 
         const logged_in_id = req?.body?.logged_in_id || req.user.id;
 
-        const {admin_id} = req.body;
+        const user_id = req.body.user_id;
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
         
         if( isUserSuperadmin ) {
+
             const SQL = `UPDATE users SET status = 0 WHERE id = ?`;
-            await db.execute(SQL, [admin_id]);
+            await db.execute(SQL, [user_id]);
 
             return res.status(200).json({response_data : {}, message : 'Admin Removed Successfully', status : 200})
+            
         } else {
             return res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401})
         }
@@ -929,20 +931,23 @@ async function getUserList(req, res) {
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
+        const permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'read_permission');
+
         if( role_id != 0 ) {
             if( isUserSuperadmin ) {
                 const SQL = `SELECT * FROM users WHERE role_id = ?`;
-                const formattedQ = db.format(SQL, [role_id]);
-                console.log(formattedQ)
-                const [result] = await db.execute(SQL, [role_id]);
-
-                if ( result.length > 0 ) {
-                    res.status(200).json({response_data : result, message : 'All Users of this role', status : 200});
-                } else {
-                    res.status(404).json({response_data : {}, message : 'No users found', status : 404});
-                }
+            } else if( permissions[0].read_permission == 1 ) {
+                const SQL = `SELECT * FROM users WHERE role_id = ?`;
             } else {
                 res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            }
+
+            const [result] = await db.execute(SQL, [role_id]);
+
+            if ( result.length > 0 ) {
+                res.status(200).json({response_data : result, message : 'All Users of this role', status : 200});
+            } else {
+                res.status(404).json({response_data : {}, message : 'No users found', status : 404});
             }
         } else {
             res.status(404).json({response_data : {}, message : 'This role name is not found', status : 404});

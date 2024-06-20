@@ -2,10 +2,10 @@ const appointmentController = require('../controllers/appointmentController');
 const express = require('express');
 const appointmentRouter = express.Router();
 
-appointmentRouter.post('/bookappointment', appointmentController.bookAppointment);
-appointmentRouter.get('/viewupcomingappointments', appointmentController.viewUpcomingAppointments);
-appointmentRouter.get('/viewtodayappointments', appointmentController.viewTodayAppointments);
-appointmentRouter.put('/markappointmentascompleted', appointmentController.markAppointmentAsCompleted);
-appointmentRouter.put('/rejectappointment', appointmentController.rejectAppointment);
+appointmentRouter.post('/book_appointment', appointmentController.bookAppointment);
+appointmentRouter.get('/view_upcoming_appointments', appointmentController.viewUpcomingAppointments);
+appointmentRouter.get('/view_today_appointments', appointmentController.viewTodayAppointments);
+appointmentRouter.put('/mark_appointment_as_completed', appointmentController.markAppointmentAsCompleted);
+appointmentRouter.put('/reject_appointment', appointmentController.rejectAppointment);
 
 module.exports = appointmentRouter;

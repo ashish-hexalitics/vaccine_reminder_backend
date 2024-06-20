@@ -4,9 +4,9 @@ const commonFunctions = require('../utils/commonFunctions')
 const express = require('express');
 const patientRouter = express.Router();
 
-patientRouter.post('/registerpatient', patientController.registerPatient);
-patientRouter.get('/getallpatients', patientController.getAllActivePatients);
-patientRouter.get('/viewupcomingappointments', patientController.viewUpcomingAppointments);
+patientRouter.post('/register_patient', patientController.registerPatient);
+patientRouter.get('/get_all_patients', patientController.getAllActivePatients);
+patientRouter.get('/view_upcoming_appointments', patientController.viewUpcomingAppointments);
 
 
 
