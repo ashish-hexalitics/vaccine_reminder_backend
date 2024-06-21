@@ -46,6 +46,7 @@ userRouter.get('/test_scheduling', userController.testScheduling);
 userRouter.get('/get_user_list', userController.getUserList);
 
 userRouter.get('/testting', userController.testting);
+userRouter.post('/grant_permissions', userController.grantBulkPermission);
 
 
 

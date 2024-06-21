@@ -958,10 +958,72 @@ async function getUserList(req, res) {
     }
 }
 
+
+
 async function grantBulkPermission(req, res) {
     try {
-        const {} = req.body;
+        
+    //     const testObj = [ 
+    //         {
+    //         "name": "admin",
+    //         "create": false,
+    //         "delete": false,
+    //         "update": false,
+    //         "read": false
+    //     },
+    //     {
+    //         "name": "doctor",
+    //         "create": false,
+    //         "delete": false,
+    //         "update": false,
+    //         "read": false
+    //     },
+    //     {
+    //         "name": "staff",
+    //         "create": false,
+    //         "delete": false,
+    //         "update": false,
+    //         "read": false
+    //     },
+    //     {
+    //         "name": "appointment",
+    //         "create": false,
+    //         "delete": false,
+    //         "update": false,
+    //         "read": false
+    //     },
+    //     {
+    //         "name": "notification",
+    //         "create": false,
+    //         "delete": false,
+    //         "update": false,
+    //         "read": false
+    //     },
+    //     {
+    //         "name": "patient",
+    //         "create": false,
+    //         "delete": false,
+    //         "update": false,
+    //         "read": false
+    //     }
+    // ];
+    
+    
+    const dataArr = req.body.dataArr;
+    const user_role_id = req.body.user_role_id;
+
+    let SQL = 'INSERT INTO permissions (module_id, module_name, create_permission, delete_permission, update_permission, read_permission) VALUES ';
+    const values = [];
+    
+    dataArr.forEach((permission, index) => {
+      SQL += `(?, ?, ?, ?, ?, ?)${index < testObj.length - 1 ? ',' : ''} `;
+      values.push(permission.module_id, permission.module_name, permission.create_permission, permission.delete_permission, permission.update_permission, permission.read_permission);
+    });
+
+    const fq = db.format(SQL, values);
+    console.log(fq);
     } catch (catcherr) {
+        console.log("Error", catcherr);
         throw catcherr;
     }
 }
