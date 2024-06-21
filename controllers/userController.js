@@ -932,12 +932,12 @@ async function getUserList(req, res) {
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
         const permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'read_permission');
-
+        let SQL;
         if( role_id != 0 ) {
             if( isUserSuperadmin ) {
-                const SQL = `SELECT * FROM users WHERE role_id = ?`;
+                SQL = `SELECT * FROM users WHERE role_id = ?`;
             } else if( permissions[0].read_permission == 1 ) {
-                const SQL = `SELECT * FROM users WHERE role_id = ?`;
+                SQL = `SELECT * FROM users WHERE role_id = ?`;
             } else {
                 res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
             }
