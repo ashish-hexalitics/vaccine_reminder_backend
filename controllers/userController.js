@@ -960,70 +960,129 @@ async function getUserList(req, res) {
 
 
 
+// async function grantBulkPermission(req, res) {
+//     try {
+        
+//     //     const testObj = [ 
+//     //         {
+//     //         "name": "admin",
+//     //         "create": false,
+//     //         "delete": false,
+//     //         "update": false,
+//     //         "read": false
+//     //     },
+//     //     {
+//     //         "name": "doctor",
+//     //         "create": false,
+//     //         "delete": false,
+//     //         "update": false,
+//     //         "read": false
+//     //     },
+//     //     {
+//     //         "name": "staff",
+//     //         "create": false,
+//     //         "delete": false,
+//     //         "update": false,
+//     //         "read": false
+//     //     },
+//     //     {
+//     //         "name": "appointment",
+//     //         "create": false,
+//     //         "delete": false,
+//     //         "update": false,
+//     //         "read": false
+//     //     },
+//     //     {
+//     //         "name": "notification",
+//     //         "create": false,
+//     //         "delete": false,
+//     //         "update": false,
+//     //         "read": false
+//     //     },
+//     //     {
+//     //         "name": "patient",
+//     //         "create": false,
+//     //         "delete": false,
+//     //         "update": false,
+//     //         "read": false
+//     //     }
+//     // ];
+    
+    
+//     const dataArr = req.body.dataArr;
+//     const user_role_id = req.body.user_role_id;
+
+//     let SQL = 'INSERT INTO permissions (module_id, module_name, create_permission, delete_permission, update_permission, read_permission) VALUES ';
+//     const values = [];
+    
+//     dataArr.forEach((permission, index) => {
+//       SQL += `(?, ?, ?, ?, ?, ?)${index < testObj.length - 1 ? ',' : ''} `;
+//       values.push(permission.module_id, permission.module_name, permission.create_permission, permission.delete_permission, permission.update_permission, permission.read_permission);
+//     });
+
+//     const fq = db.format(SQL, values);
+//     console.log(fq);
+//     } catch (catcherr) {
+//         console.log("Error", catcherr);
+//         throw catcherr;
+//     }
+// }
+
 async function grantBulkPermission(req, res) {
     try {
+        const dataArr = req.body.dataArr;
+        const user_role_id = req.body.user_role_id;
+
+        const queries = [];
+        const values = [];
         
-    //     const testObj = [ 
-    //         {
-    //         "name": "admin",
-    //         "create": false,
-    //         "delete": false,
-    //         "update": false,
-    //         "read": false
-    //     },
-    //     {
-    //         "name": "doctor",
-    //         "create": false,
-    //         "delete": false,
-    //         "update": false,
-    //         "read": false
-    //     },
-    //     {
-    //         "name": "staff",
-    //         "create": false,
-    //         "delete": false,
-    //         "update": false,
-    //         "read": false
-    //     },
-    //     {
-    //         "name": "appointment",
-    //         "create": false,
-    //         "delete": false,
-    //         "update": false,
-    //         "read": false
-    //     },
-    //     {
-    //         "name": "notification",
-    //         "create": false,
-    //         "delete": false,
-    //         "update": false,
-    //         "read": false
-    //     },
-    //     {
-    //         "name": "patient",
-    //         "create": false,
-    //         "delete": false,
-    //         "update": false,
-    //         "read": false
-    //     }
-    // ];
-    
-    
-    const dataArr = req.body.dataArr;
-    const user_role_id = req.body.user_role_id;
+        dataArr.forEach(permission => {
+            const query = `
+                UPDATE permissions 
+                SET create_permission = ?, delete_permission = ?, update_permission = ?, read_permission = ? 
+                WHERE module_id = ? AND user_role_id = ?;
+            `;
+            queries.push(query);
+            values.push(
+                permission.create_permission, 
+                permission.delete_permission, 
+                permission.update_permission, 
+                permission.read_permission, 
+                permission.module_id,
+                user_role_id
+            );
+        });
 
-    let SQL = 'INSERT INTO permissions (module_id, module_name, create_permission, delete_permission, update_permission, read_permission) VALUES ';
-    const values = [];
-    
-    dataArr.forEach((permission, index) => {
-      SQL += `(?, ?, ?, ?, ?, ?)${index < testObj.length - 1 ? ',' : ''} `;
-      values.push(permission.module_id, permission.module_name, permission.create_permission, permission.delete_permission, permission.update_permission, permission.read_permission);
-    });
+        // Join all the queries into a single string
+        const finalQuery = queries.join(' ');
 
-    const fq = db.format(SQL, values);
-    console.log(fq);
+        const fq = db.format(finalQuery, values);
+        console.log(fq);
+        
+        // Assuming you have a method to execute the query, something like:
+        await db.query(fq);
+        
+        res.send({ success: true, message: 'Permissions updated successfully' });
     } catch (catcherr) {
         console.log("Error", catcherr);
+        res.status(500).send({ success: false, message: 'An error occurred while updating permissions' });
+    }
+}
+
+
+
+
+async function getAllPermissions(req, res) {
+    try {
+        const SQL = `SELECT * FROM permissions WHERE status = 1`;
+        const [result] = await db.execute(SQL);
+
+        if( result.length > 0 ) {
+            res.status(200).json({response_data : result, message : 'All Permissions', status : 200});
+        } else {
+            res.status(404).json({response_data : result, message : 'No Permissions Found', status : 404});
+        }
+    } catch (catcherr) {
         throw catcherr;
     }
 }
@@ -1064,5 +1123,6 @@ module.exports = {
     getUserList,
 
     grantBulkPermission,
+    getAllPermissions
 
 }
