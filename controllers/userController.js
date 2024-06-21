@@ -1028,60 +1028,122 @@ async function getUserList(req, res) {
 //     }
 // }
 
+// async function grantBulkPermission(req, res) {
+//     try {
+        
+//         const logged_in_id = req?.query?.logged_in_id || req.user.id;
+//         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+//         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        
+//         const dataArr = req.body.dataArr;
+//         const user_role_id = req.body.user_role_id;
+
+//         const queries = [];
+//         const values = [];
+
+//         if( isUserSuperadmin ) {
+//             dataArr.forEach(permission => {
+//                 const query = `
+//                     UPDATE permissions 
+//                     SET create_permission = ?, delete_permission = ?, update_permission = ?, read_permission = ? 
+//                     WHERE module_id = ? AND user_role_id = ?;
+//                 `;
+//                 queries.push(query);
+//                 values.push(
+//                     permission.create_permission, 
+//                     permission.delete_permission, 
+//                     permission.update_permission, 
+//                     permission.read_permission, 
+//                     permission.module_id,
+//                     user_role_id
+//                 );
+//             });
+    
+//             // Join all the queries into a single string
+//             const finalQuery = queries.join(' ');
+    
+//             const fq = db.format(finalQuery, values);
+//             console.log(fq);
+            
+//             // Assuming you have a method to execute the query, something like:
+//             await db.query(fq);
+            
+//             res.status(200).json({ response_data: {}, message: 'Permissions updated successfully', status : 200 });
+//         } else {
+//             res.status(401)({ success: {}, message: 'You are not authorized to per', status : 401 });
+//         }
+        
+        
+//     } catch (catcherr) {
+//         console.log("Error", catcherr);
+//         res.status(500).send({ success: false, message: 'An error occurred while updating permissions' });
+//     }
+// }
+
 async function grantBulkPermission(req, res) {
     try {
+
+        const logged_in_id = req?.query?.logged_in_id || req.user.id;
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+
         const dataArr = req.body.dataArr;
         const user_role_id = req.body.user_role_id;
 
-        const queries = [];
-        const values = [];
-        
-        dataArr.forEach(permission => {
-            const query = `
-                UPDATE permissions 
-                SET create_permission = ?, delete_permission = ?, update_permission = ?, read_permission = ? 
-                WHERE module_id = ? AND user_role_id = ?;
-            `;
-            queries.push(query);
-            values.push(
-                permission.create_permission, 
-                permission.delete_permission, 
-                permission.update_permission, 
-                permission.read_permission, 
-                permission.module_id,
-                user_role_id
-            );
-        });
+        if( isUserSuperadmin ) {
+            // Iterate over each permission and execute the update query
+            for (const permission of dataArr) {
+                const query = `
+                    UPDATE permissions 
+                    SET create_permission = ?, delete_permission = ?, update_permission = ?, read_permission = ? 
+                    WHERE module_id = ? AND user_role_id = ?;
+                `;
+                const values = [
+                    permission.create_permission,
+                    permission.delete_permission,
+                    permission.update_permission,
+                    permission.read_permission,
+                    permission.module_id,
+                    user_role_id
+                ];
 
-        // Join all the queries into a single string
-        const finalQuery = queries.join(' ');
+                // Execute the query using your database connection instance
+                await db.query(query, values);
+            }
 
-        const fq = db.format(finalQuery, values);
-        console.log(fq);
+            res.status(200).json({response_data : {}, message : 'Permissions updated successfully', status : 200});
+        } else {
+            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+        }
+
         
-        // Assuming you have a method to execute the query, something like:
-        await db.query(fq);
-        
-        res.send({ success: true, message: 'Permissions updated successfully' });
     } catch (catcherr) {
-        console.log("Error", catcherr);
-        res.status(500).send({ success: false, message: 'An error occurred while updating permissions' });
+        throw catcherr;
     }
 }
 
 
-
-
 async function getAllPermissions(req, res) {
+    
     try {
-        const SQL = `SELECT * FROM permissions WHERE status = 1`;
-        const [result] = await db.execute(SQL);
+        
+        const logged_in_id = req?.query?.logged_in_id || req.user.id;
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
-        if( result.length > 0 ) {
-            res.status(200).json({response_data : result, message : 'All Permissions', status : 200});
+        if ( isUserSuperadmin ) {
+            const SQL = `SELECT * FROM permissions WHERE status = 1`;
+            const [result] = await db.execute(SQL);
+
+            if( result.length > 0 ) {
+                res.status(200).json({response_data : result, message : 'All Permissions', status : 200});
+            } else {
+                res.status(404).json({response_data : result, message : 'No Permissions Found', status : 404});
+            }
         } else {
-            res.status(404).json({response_data : result, message : 'No Permissions Found', status : 404});
+            res.status(401).json({response_data : result, message : 'You are not authorized to perform this operation', status : 401});
         }
+        
     } catch (catcherr) {
         throw catcherr;
     }
