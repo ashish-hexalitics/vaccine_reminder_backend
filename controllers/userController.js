@@ -1141,7 +1141,7 @@ async function getAllPermissions(req, res) {
                 res.status(404).json({response_data : result, message : 'No Permissions Found', status : 404});
             }
         } else {
-            res.status(401).json({response_data : result, message : 'You are not authorized to perform this operation', status : 401});
+            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
         }
         
     } catch (catcherr) {
