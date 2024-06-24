@@ -139,7 +139,7 @@ function createTokenAndSetCookie(res, user) {
 
 async function checkPermission(user_role_id, module, permission) {
     try{
-        const SQL = `SELECT ${permission} FROM permissions WHERE user_role_id = ? AND module = ?`;
+        const SQL = `SELECT ${permission} FROM permissions WHERE user_role_id = ? AND module_name = ?`;
         const [rows] = await db.execute(SQL, [user_role_id, module]);
             
         if(rows && rows.length > 0) {
