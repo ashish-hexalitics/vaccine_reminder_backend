@@ -1,14 +1,14 @@
-const http = require('http')
-const express = require('express')
+const http = require('http');
+const express = require('express');
 const cors = require('cors');
 
-const bodyParser = require('body-parser')
-const userRouter = require('./routes/userRoutes')
-const vaccineRouter = require('./routes/vaccineRoutes')
-const notificationRouter = require('./routes/notificationRoutes')
-const patientRouter = require('./routes/patientRoutes')
-const appointmentRouter = require('./routes/appointmentRoutes')
-const commonRouter = require('./routes/commonRoutes')
+const bodyParser = require('body-parser');
+const userRouter = require('./routes/userRoutes');
+const vaccineRouter = require('./routes/vaccineRoutes');
+const notificationRouter = require('./routes/notificationRoutes');
+const patientRouter = require('./routes/patientRoutes');
+const appointmentRouter = require('./routes/appointmentRoutes');
+const commonRouter = require('./routes/commonRoutes');
 const eventRouter = require('./routes/eventRoutes');
 
 const jwtMiddleware = require('./middlewares/jwtMiddleware');
@@ -50,7 +50,7 @@ app.use('/api/vaccine', jwtMiddleware, vaccineRouter)
 app.use('/api/notification', jwtMiddleware, notificationRouter)
 app.use('/api/appointment', jwtMiddleware, appointmentRouter)
 app.use('/api/common', jwtMiddleware, commonRouter)
-app.use('/api/event', jwtMiddleware.eventRouter);
+app.use('/api/event', jwtMiddleware, eventRouter);
 
 app.listen(port, () => {
     console.log('Server is running on port ' + port)

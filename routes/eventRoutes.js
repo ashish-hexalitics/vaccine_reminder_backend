@@ -6,6 +6,6 @@ eventRouter.post('/create_event', eventController.createEvent);
 eventRouter.get('/view_upcoming_events', eventController.getUpcomingEvents);
 eventRouter.put('/edit_event', eventController.editEvent);
 eventRouter.put('/delete_event', eventController.deleteEvent);
-eventRouter.get('view_event', eventController.viewEvent);
+eventRouter.get('/view_event', eventController.viewEvent);
 
 module.exports = eventRouter;
