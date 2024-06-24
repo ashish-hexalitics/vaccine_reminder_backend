@@ -1123,7 +1123,7 @@ async function grantBulkPermission(req, res) {
 }
 
 
-async function getMyPermissions() {
+async function getMyPermissions(req, res) {
 
     const logged_in_id = req?.query?.logged_in_id || req.user.id;
     const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
