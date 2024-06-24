@@ -1123,6 +1123,22 @@ async function grantBulkPermission(req, res) {
 }
 
 
+async function getMyPermissions() {
+
+    const logged_in_id = req?.query?.logged_in_id || req.user.id;
+    const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+    // const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+    
+    const SQL = `SELECT * FROM permissions WHERE user_role_id = ?`;
+    const [result] = await db.execute(SQL, [logged_in_user_role_id]);
+
+    if( result.length > 0 ) {
+        res.status(200).json({response_data : result, message : 'All Permissions for this user type', status : 200});
+    } else {
+        res.status(404).json({response_data : result, message : 'No Permissions Found', status : 404});
+    }
+}
+
 async function getAllPermissions(req, res) {
     
     try {
@@ -1187,6 +1203,7 @@ module.exports = {
     getUserList,
 
     grantBulkPermission,
-    getAllPermissions
+    getAllPermissions,
+    getMyPermissions
 
 }

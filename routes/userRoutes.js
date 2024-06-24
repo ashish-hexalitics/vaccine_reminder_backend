@@ -48,7 +48,7 @@ userRouter.get('/get_user_list', userController.getUserList);
 userRouter.get('/testting', userController.testting);
 userRouter.post('/grant_permissions', userController.grantBulkPermission);
 userRouter.get('/get_all_permissions', userController.getAllPermissions);
-
+userRouter.get('/get_my_permissions', userController.getMyPermissions);
 
 // userRouter.get('/getallroles', userController.getAllRoles);
 
