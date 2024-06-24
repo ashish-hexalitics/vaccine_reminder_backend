@@ -364,7 +364,7 @@ async function login(req, res) {
                 roleId: user.role_id
             };
 
-            const SQL2 = `SELECT module_name, create_permission, read_permission, update_permission, delete_permission FROM permissions 
+            const SQL2 = `SELECT module_id, module_name, create_permission, read_permission, update_permission, delete_permission FROM permissions 
             WHERE user_role_id = ?`;
             const permissions = await db.execute(SQL2, [user.role_id]);
             user.permissions = permissions[0];
