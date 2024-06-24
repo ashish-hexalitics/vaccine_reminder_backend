@@ -30,7 +30,7 @@ async function createEvent(req, res) {
             res.status(200).json({response_data : {}, message : 'Event has been created successfully', status : 200});
 
         } else {
-            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
         }
     } catch (catcherr) {
         throw catcherr;
@@ -61,7 +61,7 @@ async function getUpcomingEvents(req, res) {
             }
 
         } else {
-            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
         }
             
     } catch (catcherr) {
@@ -88,7 +88,7 @@ async function editEvent(req, res){
             await db.execute(SQL, values);
             res.status(200).json({response_data : {}, message : 'Event has been updated successfully', status : 200});
         } else {
-            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
         }
 
     } catch (catcherr) {
@@ -123,7 +123,7 @@ async function viewEvent(req, res) {
             }
 
         } else {
-            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
         }
 
     } catch (catcherr) {
@@ -152,7 +152,7 @@ async function deleteEvent(req, res) {
             res.status(200).json({response_data : {}, message : 'Event', status : 200});
             
         } else {
-            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
         }
 
     } catch (catcherr) {

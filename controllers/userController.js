@@ -30,7 +30,7 @@ async function createPermission(req, res) {
             return res.status(200).json({response_data : {}, message : 'Permission for this user role has been created successfully', status : 200});
             
         } else {
-            return res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
         }
     } catch(catcherr) {
         console.log(catcherr);
@@ -85,10 +85,10 @@ async function registerUser(req, res) {
         
         // if(role_name === 'superadmin') {
         if(registeredUserRoleName == 'superadmin'){    
-            return res.status(401).json({
+            return res.status(403).json({
                 response_data : {}, 
                 message : 'You are not authorized to perform this operation', 
-                status : 401 
+                status : 403 
             });
         }
 
@@ -127,7 +127,7 @@ async function registerUser(req, res) {
                 
                 const emailRegistered = await commonFunctions.isEmailAlreadyRegistered(email);
                 if (emailRegistered) {
-                    return res.status(401).json({ response_data: {}, message: "Email already in use", status: 401 });
+                    return res.status(403).json({ response_data: {}, message: "Email already in use", status: 403 });
                 }
 
                 const formattedQuery = db.format(SQL, values);
@@ -171,10 +171,10 @@ async function registerUser(req, res) {
                     status : 200 
                 });
             } else {
-                return res.status(401).json({
+                return res.status(403).json({
                     response_data : {}, 
                     message : 'You are not authorized to perform this operation', 
-                    status : 401 
+                    status : 403 
                 });
             }
         // } else {
@@ -327,7 +327,7 @@ function testToken() {
             
 //     } catch( catcherr ) {
 //         throw catcherr;
-//         res.status( 401 ).json({data : {}, status : 'Failed'})
+//         res.status( 403 ).json({data : {}, status : 'Failed'})
 //     }
 
     
@@ -464,7 +464,7 @@ async function getAUser(req, res) {
 //                 res.status(200).json({response_data : result, message : 'Staff fetched successfully', status : 200})
 //             }
 //         } else {
-//             res.status(401).json({response_data : result, message : 'You are not authorized to perform this operation', status : 401})
+//             res.status(403).json({response_data : result, message : 'You are not authorized to perform this operation', status : 403})
 //         }
         
 //     } catch( catcherr ) {
@@ -523,7 +523,7 @@ async function getStaffList(req, res) {
         }
 
         if( !isAuthenticated ) {
-            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401})
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403})
         }
 
         if( result.length == 0 ) {
@@ -574,7 +574,7 @@ async function deleteStaff(req, res) {
         } else if( isUserDoctor ) {
 
         } else{
-            res.status(401).json({response_data : {}, message : "You are not authorized to perform this operation", status : 401});
+            res.status(403).json({response_data : {}, message : "You are not authorized to perform this operation", status : 403});
         }
 
         
@@ -617,7 +617,7 @@ async function viewAllAdmins(req, res) {
                     
                 
         } else {
-            return res.status(401).json({response_data : {}, message : 'You are not a superadmin and hence cannot perform this operation', status : 401})
+            return res.status(403).json({response_data : {}, message : 'You are not a superadmin and hence cannot perform this operation', status : 403})
         }
     } catch( catcherr ) {
         console.log(catcherr)
@@ -641,7 +641,7 @@ async function editAdmin(req, res) {
             res.status(200).json({response_data : {}, message : "Admin Updated Successfully", status : 200})
                 
         } else {
-            res.status(401).json({response_data : {}, message : "You are not authorized to perform this operation", status : 401})
+            res.status(403).json({response_data : {}, message : "You are not authorized to perform this operation", status : 403})
         }
         
     } catch( catcherr ) {
@@ -774,7 +774,7 @@ async function getAllDoctors(req, res) {
             }
 
         } else {
-            return res.status(401).json({response_data : {}, message : "You are not authorized to perform this operation", status : 401});
+            return res.status(403).json({response_data : {}, message : "You are not authorized to perform this operation", status : 403});
         }
 
     } catch(catcherr) {
@@ -836,7 +836,7 @@ async function setDoctorTimeSlots(req, res) {
             return res.status(200).json({response_data : {}, message : "Time slot for this doctor has been created successfully", status : 200});        
             
         } else {
-            return res.status(401).json({response_data : result1, message : "You cannot set time slots for this type of user", status : 401});
+            return res.status(403).json({response_data : result1, message : "You cannot set time slots for this type of user", status : 403});
         }
         
     }
@@ -864,7 +864,7 @@ async function editStaff(req, res) {
             await db.execute(SQL, values);
             return res.status(200).json({response_data : {}, message : 'Staff updated successfully', status : 200})
         } else {
-            return res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401})
+            return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403})
         }
         
     } catch(catcherr){
@@ -889,7 +889,7 @@ async function deleteAdmin(req,res) {
             return res.status(200).json({response_data : {}, message : 'Admin Removed Successfully', status : 200})
             
         } else {
-            return res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401})
+            return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403})
         }
     } catch(catcherr) {
         throw catcherr;
@@ -939,7 +939,7 @@ async function getUserList(req, res) {
             } else if( permissions[0].read_permission == 1 ) {
                 SQL = `SELECT * FROM users WHERE role_id = ?`;
             } else {
-                res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+                res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
             }
 
             const [result] = await db.execute(SQL, [role_id]);
@@ -1070,7 +1070,7 @@ async function getUserList(req, res) {
             
 //             res.status(200).json({ response_data: {}, message: 'Permissions updated successfully', status : 200 });
 //         } else {
-//             res.status(401)({ success: {}, message: 'You are not authorized to per', status : 401 });
+//             res.status(403)({ success: {}, message: 'You are not authorized to per', status : 403 });
 //         }
         
         
@@ -1113,7 +1113,7 @@ async function grantBulkPermission(req, res) {
 
             res.status(200).json({response_data : {}, message : 'Permissions updated successfully', status : 200});
         } else {
-            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
         }
 
         
@@ -1159,7 +1159,7 @@ async function getAllPermissions(req, res) {
                 res.status(404).json({response_data : result, message : 'No Permissions Found', status : 404});
             }
         } else {
-            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
         }
         
     } catch (catcherr) {

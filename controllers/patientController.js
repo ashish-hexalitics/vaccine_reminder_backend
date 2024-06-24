@@ -71,7 +71,7 @@ async function registerPatient(req, res) {
 
                 return res.status(200).json({ response_data : {}, message: 'Patient registered successfully', status : 200 });
             } else {
-                return res.status(401).json({ response_data : {}, message: 'You are not authorized', status : 401 });
+                return res.status(403).json({ response_data : {}, message: 'You are not authorized', status : 403 });
             }
             
         } catch(catcherr) {
@@ -137,7 +137,7 @@ async function editPatient(req, res) {
             res.status(200).json({response_data : {}, message : 'Patient info updated successfully', status : 200});
 
         } else {
-            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
         }
 
     } catch(catcherr) {
@@ -161,7 +161,7 @@ async function deletePatient(req, res) {
 
             res.status(200).json({response_data : {}, message : 'Patient info updated successfully', status : 200});
         } else {
-            res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
         }
 
     } catch(catcherr) {

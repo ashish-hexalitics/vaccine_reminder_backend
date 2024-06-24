@@ -15,7 +15,7 @@ async function bookAppointment(req, res) {
             await db.execute(SQL, values);
             return res.status(200).json({ response_data : {}, message: 'Appointment booked successfully', status : 200 });
         } else {
-            return res.status(401).json({ response_data : {}, message: 'You are not authorized to do this operation', status : 401 });
+            return res.status(403).json({ response_data : {}, message: 'You are not authorized to do this operation', status : 403 });
         }
         
             
@@ -116,7 +116,7 @@ async function markAppointmentAsCompleted(req, res) {
 
             return res.status(200).json({response_data : {}, message : 'Information updated successfully', status : 200});
         } else {
-            return res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
         }
     } catch(catcherr) {
         throw catcherr;
@@ -139,7 +139,7 @@ async function rejectAppointment(req, res) {
 
             return res.status(200).json({response_data : {}, message : 'Information updated successfully', status : 200});
         } else {
-            return res.status(401).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 401});
+            return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
         }
     } catch(catcherr) {
         throw catcherr;

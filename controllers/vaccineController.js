@@ -50,7 +50,7 @@ async function createMasterVaccineTemplate(req, res) {
             return res.status(200).json({response_data : {}, message : "Information stored sucessfully", status : 200});
             
         } else {
-            return res.status(401).json({response_data : {}, message : 'You are not authorized to do this operation', status : 401});
+            return res.status(403).json({response_data : {}, message : 'You are not authorized to do this operation', status : 403});
         }
     } catch(catcherr){
         console.log(catcherr);
@@ -77,7 +77,7 @@ async function createMasterVaccineDetails(req, res) {
             return res.status(200).json({response_data : {}, 'message' : 'Master vaccine details has been set successfully', status : 200});
 
         } else {
-            return res.status(401).json({response_data : {}, 'message' : 'You are not authorized to perform this operation', status : 401});
+            return res.status(403).json({response_data : {}, 'message' : 'You are not authorized to perform this operation', status : 403});
         }
 
     } catch (catcherr) {
@@ -118,7 +118,7 @@ async function getVaccineVersionList(req, res){
                 return res.status(404).json({response_data : {}, 'message' : 'No vaccine Found', status : 404});
             }
         } else {
-            return res.status(401).json({response_data : {}, 'message' : 'You are not authorized to perform this operation', status : 401});
+            return res.status(403).json({response_data : {}, 'message' : 'You are not authorized to perform this operation', status : 403});
         }
 
     } catch (catcherr) {
@@ -144,7 +144,7 @@ async function getMasterVaccineTemplateList(req, res) {
             }
 
         } else {
-            return res.status(401).json({response_data : {}, 'message' : 'You are not authorized to perform this operation', status : 401});
+            return res.status(403).json({response_data : {}, 'message' : 'You are not authorized to perform this operation', status : 403});
         }
 
     } catch (catcherr) {
@@ -177,7 +177,7 @@ async function updatePatientVaccinationStatus(req, res) {
             }
                         
         } else {
-            res.status(401).json({response_data : {}, message : "You are not authorized to perform this operation", status : 401});
+            res.status(403).json({response_data : {}, message : "You are not authorized to perform this operation", status : 403});
         }
 
     } catch (catcherr) {
@@ -228,7 +228,7 @@ async function updateVaccineDetails(req, res) {
                 res.status(404).json({response_data : {}, message : "This vaccine has not been assigned to this doctor", status : 404});
             }
         } else {
-            res.status(401).json({response_data : {}, message : "You are not authorized to perform this operation", status : 401});
+            res.status(403).json({response_data : {}, message : "You are not authorized to perform this operation", status : 403});
         }
         
         
