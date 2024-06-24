@@ -1131,7 +1131,7 @@ async function getAllPermissions(req, res) {
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
         
-        var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, 'user permissions', 'create_permission');
+        var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, 'user permissions', 'read_permission');
         console.log('permissions from database', permissions);
         if ( isUserSuperadmin || permissions[0].read_permission == 1) {
             const SQL = `SELECT * FROM permissions WHERE status = 1`;
