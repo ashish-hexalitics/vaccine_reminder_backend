@@ -154,8 +154,11 @@ async function registerUser(req, res) {
                     if (i < moduleresult.length - 1) {
                         defaultPermissionSQL += ', ';
                     }
-                    permValues.push(newUserId, role_id, moduleresult[i].module_name, moduleresult[i].module_id, 0, 0, 0, 0, logged_in_id, currentDate);
+                    permValues.push(newUserId, role_id, moduleresult[i].module_name, moduleresult[i].id, 0, 0, 0, 0, logged_in_id, currentDate);
                 }
+
+                const fqq = db.format(defaultPermissionSQL, permValues);
+                console.log(fqq);
                 await db.execute(defaultPermissionSQL, permValues);
 
                 //Assigning default permissions to the registered user
