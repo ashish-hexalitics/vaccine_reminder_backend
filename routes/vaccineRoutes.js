@@ -14,5 +14,8 @@ vaccineRouter.put('/update_patient_vaccination_status', vaccineController.update
 
 vaccineRouter.put('/update_vaccine_details', vaccineController.updateVaccineDetails);
 
+vaccineRouter.post('/create_master_vaccine_template', vaccineController.createMasterVaccines);
+
+
 
 module.exports = vaccineRouter
