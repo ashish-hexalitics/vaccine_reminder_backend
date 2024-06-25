@@ -141,8 +141,8 @@ async function registerUser(req, res) {
                 const [moduleresult] = await db.execute(SQL1);
                 
                 //Assigning default permissions to the registered user
-                
-                const defaultPermissionSQL = `INSERT INTO permissions 
+
+                let defaultPermissionSQL = `INSERT INTO permissions 
                 (user_id, user_role_id, module_name, module_id, 
                 create_permission, read_permission, update_permission, 
                 delete_permission, created_by, create_date)`;
