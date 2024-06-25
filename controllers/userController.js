@@ -93,7 +93,7 @@ async function registerUser(req, res) {
         }
 
         if ( !isUserSuperadmin ) {
-            var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, registeredUserRoleName, 'create_permission');
+            var permissions = await commonFunctions.checkPermission(logged_in_id, registeredUserRoleName, 'create_permission');
             if(permissions[0].create_permission == 1) {
                 canCreate = true;
             } else {
@@ -136,6 +136,30 @@ async function registerUser(req, res) {
                 const [result] = await db.execute(SQL, values);
                 
                 const newUserId = result.insertId;
+
+                const SQL1 = `SELECT id, module_name FROM modules`;
+                const [moduleresult] = await db.execute(SQL1);
+                
+                //Assigning default permissions to the registered user
+                
+                const defaultPermissionSQL = `INSERT INTO permissions 
+                (user_id, user_role_id, module_name, module_id, 
+                create_permission, read_permission, update_permission, 
+                delete_permission, created_by, create_date)`;
+                
+                const permValues = [];
+                const currentDate = new Date();
+                for (let i = 0; i < moduleresult.length; i++) {
+                    defaultPermissionSQL += '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                    if (i < moduleresult.length - 1) {
+                        defaultPermissionSQL += ', ';
+                    }
+                    permValues.push(newUserId, role_id, moduleresult[i].module_name, moduleresult[i].module_id, 0, 0, 0, 0, logged_in_id, currentDate);
+                }
+                await db.execute(defaultPermissionSQL, permValues);
+
+                //Assigning default permissions to the registered user
+
                 const isRegisteredUserDoctor = await commonFunctions.checkedDoctorByRoleId(role_id);
                 // const registeredUserRoleName = await commonFunctions.getUserRoleNameByRoleId(role_id);
                 if ( isRegisteredUserDoctor ) {
@@ -365,8 +389,8 @@ async function login(req, res) {
             };
 
             const SQL2 = `SELECT module_id, module_name, create_permission, read_permission, update_permission, delete_permission FROM permissions 
-            WHERE user_role_id = ?`;
-            const permissions = await db.execute(SQL2, [user.role_id]);
+            WHERE user_id = ?`;
+            const permissions = await db.execute(SQL2, [user.id]);
             user.permissions = permissions[0];
             const accessToken = jwt.sign(tokenPayload, process.env.TOKEN, { expiresIn: '7h' }); // Token expires in 7 hour
             
@@ -485,7 +509,7 @@ async function getStaffList(req, res) {
 
         var isAuthenticated = false;
 
-        var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, 'staff', 'read_permission');
+        var permissions = await commonFunctions.checkPermission(logged_in_id, 'staff', 'read_permission');
         let SQL;
         let result;
         if( isUserSuperadmin) {
@@ -738,7 +762,7 @@ async function getAllDoctors(req, res) {
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
         
-        var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, 'Doctor', 'read_permission');
+        var permissions = await commonFunctions.checkPermission(logged_in_id, 'Doctor', 'read_permission');
 
         if( isUserSuperadmin || permissions[0].read_permission == 1 ) {
 
@@ -854,7 +878,7 @@ async function editStaff(req, res) {
         const { user_id, name, email, date_of_birth, mobile_number, country, state, city, updated_date } = req.body;
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_user_id);
         
-        var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, 'staff', 'update_permission');
+        var permissions = await commonFunctions.checkPermission(logged_in_id, 'staff', 'update_permission');
         
         if(permissions[0].update_permission == 1) {
             const SQL = `UPDATE users SET name = ?, email = ?, date_of_birth = ?, mobile_number = ?, country = ?, 
@@ -931,7 +955,7 @@ async function getUserList(req, res) {
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
-        const permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'read_permission');
+        const permissions = await commonFunctions.checkPermission(logged_in_id, role_name, 'read_permission');
         let SQL;
         if( role_id != 0 ) {
             if( isUserSuperadmin ) {
@@ -1129,7 +1153,7 @@ async function getMyPermissions(req, res) {
     const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
     // const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
     
-    const SQL = `SELECT * FROM permissions WHERE user_role_id = ?`;
+    const SQL = `SELECT * FROM permissions WHERE user_id = ?`;
     const [result] = await db.execute(SQL, [logged_in_user_role_id]);
 
     if( result.length > 0 ) {
@@ -1147,7 +1171,7 @@ async function getAllPermissions(req, res) {
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
         
-        var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, 'user permissions', 'read_permission');
+        var permissions = await commonFunctions.checkPermission(logged_in_id, 'user permissions', 'read_permission');
         console.log('permissions from database', permissions);
         if ( isUserSuperadmin || permissions[0].read_permission == 1) {
             const SQL = `SELECT * FROM permissions WHERE status = 1`;
