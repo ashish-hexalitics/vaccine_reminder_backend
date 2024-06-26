@@ -2,8 +2,6 @@ const db = require('../utils/db.js')
 const commonFunctions = require('../utils/commonFunctions');
 const e = require('express');
 
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // function createDoctorVaccine(req, res) {

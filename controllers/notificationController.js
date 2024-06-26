@@ -7,9 +7,9 @@ async function sendNotification(req, res) {
         
         const { logged_in_id, notification_message, notification_to, created_date } = req.body;
         
-        const user_role_id = await commonFunctions.getUserRoleByUserId(logged_in_id);
+        // const user_role_id = await commonFunctions.getUserRoleByUserId(logged_in_id);
         
-        const permissions = await commonFunctions.checkPermission(user_role_id, 'notification', 'create_permission');
+        const permissions = await commonFunctions.checkPermission(logged_in_id, 'notification', 'create_permission');
         if(permissions[0].create_permission == 1) {
             const query = `INSERT INTO notifications (notification_message, notification_to, created_date) VALUES (?, ?, ?)`;
             const values = [notification_message, notification_to, created_date];
