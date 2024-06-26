@@ -266,6 +266,46 @@ async function updateVaccineDetails(req, res) {
 //     }
 // }
 
+async function getUpcomingVaccineList(req, res) {
+    try {
+        const logged_in_id = req?.query?.logged_in_id || req.user.id;
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+        // if ( isUserSuperadmin ) {
+
+        // }
+
+    } catch (catcherr) {
+        
+    }
+}
+
+async function deleteSuperAdminVaccine(req, res) {
+    try {
+            const logged_in_id = req?.body?.logged_in_id || req.user.id;
+            const template_id = req.body.template_id;
+            const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+            
+            const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+            const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+
+            if( isUserSuperadmin || isUserAdmin ) {
+                const SQL1 = `UPDATE master_vaccine SET status = 0 WHERE id = ?`;
+                await db.execute(SQL1, [template_id]);
+
+                const SQL2 = `UPDATE master_vaccine_details SET status = 0 WHERE master_vaccine_id = ?`;
+                await db.execute(SQL2, [template_id]);
+
+                res.status(200).json({response_data : {}, message : 'Vaccine Status Updated successfully', status : 200});
+            } else {
+                res.status(200).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+            }
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -277,5 +317,7 @@ module.exports = {
     getMasterVaccineTemplateList,
     getVaccineVersionList,
     updatePatientVaccinationStatus, //14-06-2024
-    updateVaccineDetails  //14-06-2024
+    updateVaccineDetails,  //14-06-2024
+    deleteSuperAdminVaccine,
+    getUpcomingVaccineList
 }
