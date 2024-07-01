@@ -42,7 +42,7 @@ async function createMasterVaccineTemplate(req, res) {
         }
         if(isUserSuperAdmin) {
             
-            var query = `INSERT INTO master_vaccine (name, description, vaccine_frequency, version_number, is_mandatory, created_by, created_date) VALUES (?,?,?,?,?,?)`;
+            let query = `INSERT INTO master_vaccine (name, description, vaccine_frequency, version_number, is_mandatory, created_by, created_date) VALUES (?,?,?,?,?,?)`;
             const values = [name, description, vaccine_frequency, version_number, is_mandatory, created_by, created_date];
             await db.query(query, values);
             return res.status(200).json({response_data : {}, message : "Information stored sucessfully", status : 200});
@@ -169,13 +169,13 @@ async function updatePatientVaccinationStatus(req, res) {
                 const SQL = `UPDATE patient_vaccination_info SET vaccinated_status = 1 WHERE patient_id = ? AND vaccine_id = ?`;
                 await db.execute(SQL, [patient_id, vaccine_id]);
 
-                res.status(200).json({response_data : {}, message : "Patient's Vaccination Status Updated Successfully", status : 200});
+                return res.status(200).json({response_data : {}, message : "Patient's Vaccination Status Updated Successfully", status : 200});
             } else {
-                res.status(404).json({response_data : {}, message : "This vaccine is not meant for this patient", status : 404});
+                return res.status(404).json({response_data : {}, message : "This vaccine is not meant for this patient", status : 404});
             }
                         
         } else {
-            res.status(403).json({response_data : {}, message : "You are not authorized to perform this operation", status : 403});
+            return res.status(403).json({response_data : {}, message : "You are not authorized to perform this operation", status : 403});
         }
 
     } catch (catcherr) {
@@ -221,12 +221,12 @@ async function updateVaccineDetails(req, res) {
     
                 await db.execute(SQL, values);
     
-                res.status(200).json({response_data : {}, message : "Vaccine details have been updated successfully", status : 200});
+                return res.status(200).json({response_data : {}, message : "Vaccine details have been updated successfully", status : 200});
             } else {
-                res.status(404).json({response_data : {}, message : "This vaccine has not been assigned to this doctor", status : 404});
+                return res.status(404).json({response_data : {}, message : "This vaccine has not been assigned to this doctor", status : 404});
             }
         } else {
-            res.status(403).json({response_data : {}, message : "You are not authorized to perform this operation", status : 403});
+            return res.status(403).json({response_data : {}, message : "You are not authorized to perform this operation", status : 403});
         }
         
         
@@ -267,17 +267,37 @@ async function updateVaccineDetails(req, res) {
 // }
 
 async function getUpcomingVaccineList(req, res) {
+    
     try {
         const logged_in_id = req?.query?.logged_in_id || req.user.id;
+        
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
         const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
-        // if ( isUserSuperadmin ) {
+        
+        if ( isUserSuperadmin || isUserAdmin ) {
+            const SQL = `SELECT p.name as patient_name, u.name as doctor_name, 
+            dmv.name as vaccine_name, pvi.vaccination_start_date, pvi.vaccination_end_date, pvi.vaccine_id
+            FROM patient_vaccination_info as pvi 
+            INNER JOIN patients as p ON pvi.patient_id = p.id
+            INNER JOIN users as u ON pvi.doctor_id = u.id
+            INNER JOIN doctor_master_vaccine as dmv ON pvi.vaccine_id = dmv.id  
+            WHERE DATE_FORMAT(vaccination_start_date, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') 
+            ORDER BY DATE_FORMAT(vaccination_start_date, '%m-%d')`
 
-        // }
+            const [result] = await db.execute(SQL);
+
+            if( result.length > 0 ) {
+                return res.status(200).json({response_data : result, message : 'All Upcoming vaccination info', status : 200});
+            } else {
+                return res.status(404).json({response_data : {}, message : 'No upcomng vaccination found', status : 404});
+            }
+        } else {
+            return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+        }
 
     } catch (catcherr) {
-        
+        throw catcherr;
     }
 }
 
@@ -297,10 +317,92 @@ async function deleteSuperAdminVaccine(req, res) {
                 const SQL2 = `UPDATE master_vaccine_details SET status = 0 WHERE master_vaccine_id = ?`;
                 await db.execute(SQL2, [template_id]);
 
-                res.status(200).json({response_data : {}, message : 'Vaccine Status Updated successfully', status : 200});
+                return res.status(200).json({response_data : {}, message : 'Vaccine Status Updated successfully', status : 200});
             } else {
-                res.status(200).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+                return res.status(200).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
             }
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+async function deleteDoctorVaccine(req, res) {
+    try {
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        const template_id = req.body.template_id;
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+
+        if( isUserSuperadmin || isUserAdmin ) {
+            const SQL1 = `UPDATE doctor_master_vaccine SET status = 0 WHERE id = ?`;
+            await db.execute(SQL1, [template_id]);
+
+            const SQL2 = `UPDATE doctor_master_vaccine_details SET status = 0 WHERE master_vaccine_id = ?`;
+            await db.execute(SQL2, [template_id]);
+
+            return res.status(200).json({response_data : {}, message : 'Vaccine Status Updated successfully', status : 200});
+        } else {
+            return res.status(200).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+        }
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+async function getCompletedVaccinationList() {
+    try {
+
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        const template_id = req.body.template_id;
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+
+        if ( isUserSuperadmin || isUserAdmin ) {
+            const SQL = `SELECT * FROM patient_vaccination_info WHERE vaccinated_status = ?`;
+            const [result] = await db.execute(SQL, [1]);
+
+            if( result.length > 0 ) {
+                res.status(404).json({response_data : result, message : 'List of completed vaccination', status : 200});
+            } else {
+                res.status(404).json({response_data : {}, message : 'No completed vaccination found', status : 404});
+            }
+        } else {
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation.', status : 403});
+        }
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+async function getDueVaccinationList() {
+    try {
+
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        const template_id = req.body.template_id;
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+
+        if ( isUserSuperadmin || isUserAdmin ) {
+            const SQL = `SELECT * FROM patient_vaccination_info WHERE vaccinated_status = ?`;
+            const [result] = await db.execute(SQL, [0]);
+
+            if( result.length > 0 ) {
+                res.status(404).json({response_data : result, message : 'List of due vaccination', status : 200});
+            } else {
+                res.status(404).json({response_data : {}, message : 'No due vaccination found', status : 404});
+            }
+        } else {
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation.', status : 403});
+        }
 
     } catch (catcherr) {
         throw catcherr;
@@ -319,5 +421,8 @@ module.exports = {
     updatePatientVaccinationStatus, //14-06-2024
     updateVaccineDetails,  //14-06-2024
     deleteSuperAdminVaccine,
-    getUpcomingVaccineList
+    deleteDoctorVaccine,
+    getUpcomingVaccineList,
+    getCompletedVaccinationList,
+    getDueVaccinationList
 }
