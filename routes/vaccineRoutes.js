@@ -19,5 +19,6 @@ vaccineRouter.get('/get_upcoming_vaccination_list', vaccineController.getUpcomin
 
 vaccineRouter.get('/get_completed_vaccination_list', vaccineController.getCompletedVaccinationList);
 vaccineRouter.get('/get_due_vaccination_list', vaccineController.getDueVaccinationList);
+vaccineRouter.post('/create_master_vaccine_template', vaccineController.createMasterVaccines);
 
 module.exports = vaccineRouter

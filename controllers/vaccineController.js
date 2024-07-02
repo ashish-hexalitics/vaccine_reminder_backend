@@ -411,6 +411,64 @@ async function getDueVaccinationList() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+async function createMasterVaccines(req, res) {
+    try {
+        const { name, description, is_mandatory, created_date, ismulti, vaccines } = req.body;
+        const logged_in_id = req.user.id;
+        const created_by = req.user.id || req.body.created_by;
+        const role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        console.log(vaccines)
+
+        if (role_id == 0) {
+            return res.status(400).json({ response_data: {}, message: "This user does not exist", status: 400 });
+        }
+
+        const isUserSuperAdmin = await commonFunctions.isSuperAdmin(role_id);
+        if (isUserSuperAdmin === 0) {
+            return res.status(400).json({ response_data: {}, message: "This role does not exist", status: 400 });
+        }
+
+        if (isUserSuperAdmin) {
+            if (ismulti) {
+                // Handle multiple vaccine entries
+
+                if (!Array.isArray(vaccines) || vaccines.length === 0) {
+                    return res.status(400).json({ response_data: {}, message: "Vaccines array is required when ismulti is true", status: 400 });
+                }
+
+                const query = `INSERT INTO master_vaccine (name, description, is_mandatory, created_by, created_date) VALUES ?`;
+                const values = vaccines.map(vaccine => [
+                    vaccine.name,
+                    vaccine.description,
+                    vaccine.is_mandatory,
+                    created_by,
+                    created_date
+                ]);
+
+                await db.query(query, [values]);
+                return res.status(200).json({ response_data: {}, message: "Information stored successfully", status: 200 });
+
+            } else {
+                // Handle single vaccine entry
+                const query = `INSERT INTO master_vaccine (name, description, is_mandatory, created_by, created_date) VALUES (?,?,?,?,?)`;
+                const values = [name, description, is_mandatory, created_by, created_date];
+
+                await db.query(query, values);
+                return res.status(200).json({ response_data: {}, message: "Information stored successfully", status: 200 });
+            }
+        } else {
+            return res.status(403).json({ response_data: {}, message: 'You are not authorized to do this operation', status: 403 });
+        }
+    } catch (catcherr) {
+        console.log(catcherr);
+        return res.status(500).json({ response_data: {}, message: 'Internal server error', status: 500 });
+    }
+}
+
+
+  
+
 module.exports = {
     // createDoctorVaccine,
     createMasterVaccineTemplate,
@@ -425,4 +483,5 @@ module.exports = {
     getUpcomingVaccineList,
     getCompletedVaccinationList,
     getDueVaccinationList
+    createMasterVaccines,
 }
