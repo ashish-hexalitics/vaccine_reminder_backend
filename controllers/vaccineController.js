@@ -482,6 +482,6 @@ module.exports = {
     deleteDoctorVaccine,
     getUpcomingVaccineList,
     getCompletedVaccinationList,
-    getDueVaccinationList
+    getDueVaccinationList,
     createMasterVaccines,
 }

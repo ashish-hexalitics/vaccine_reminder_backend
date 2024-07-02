@@ -1196,9 +1196,9 @@ async function getAllPermissions(req, res) {
 
 async function searchUser( req, res ) {
 
-    const searchQuery = req.query.q;
+    const searchQuery = req.query.search_query;
     if (!searchQuery) {
-        return res.status(400).json({ message: 'Query parameter "q" is required' });
+        return res.status(400).json({ message: 'Query parameter "search_query" is required' });
         //test comment
     }
 
