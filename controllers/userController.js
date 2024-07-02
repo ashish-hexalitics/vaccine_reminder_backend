@@ -1199,6 +1199,7 @@ async function searchUser( req, res ) {
     const searchQuery = req.query.q;
     if (!searchQuery) {
         return res.status(400).json({ message: 'Query parameter "q" is required' });
+        //test comment
     }
 
     const sql = `
