@@ -1194,6 +1194,28 @@ async function getAllPermissions(req, res) {
     }
 }
 
+async function searchUser( req, res ) {
+
+    const searchQuery = req.query.q;
+    if (!searchQuery) {
+        return res.status(400).json({ message: 'Query parameter "q" is required' });
+    }
+
+    const sql = `
+        SELECT id, role_id, parent_id, name FROM users 
+        WHERE LOWER(name) LIKE LOWER(?) 
+        OR LOWER(email) LIKE LOWER(?)`;
+    const query = `%${searchQuery}%`;
+
+    const [result] = await db.query(sql, [query, query]);
+
+    if( result.length > 0 ) {
+        res.status(200).json({response_data : result, message : 'All searched users', status : 200});
+    } else {
+        res.status(404).json({response_data : result, message : 'No Users Found', status : 404});
+    }
+}
+
 module.exports = {
     registerUser, 
     login,
@@ -1231,6 +1253,8 @@ module.exports = {
 
     grantBulkPermission,
     getAllPermissions,
-    getMyPermissions
+    getMyPermissions,
+
+    searchUser
 
 }
