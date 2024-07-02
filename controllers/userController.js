@@ -441,17 +441,36 @@ async function login(req, res) {
 async function getAUser(req, res) {
 
     try{
+
+        const logged_in_id = req?.query?.logged_in_id || req.user.id;
+
         const user_id = req.query.user_id;
-        const SQL = `SELECT u.id, u.role_id, ur.role_name, u.parent_id, u.name, u.email, u.date_of_birth, u.mobile_number FROM users u 
-        INNER JOIN user_roles ur ON u.role_id = ur.id 
-        WHERE u.id = ? AND u.status = 1`;
-        const [result] = await db.execute(SQL, [user_id]);
-        
-        if( result.length == 0 ) {
-            return res.status(404).json({response_data : {}, message : 'No user found', status : 404})    
-        } else {
-            return res.status(200).json({response_data : result[0], userinfo : req.user, message : 'User fetched successfully', status : 200})
-        }   
+
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+
+        if ( isUserSuperadmin || isUserAdmin ) {
+            
+            if ( isUserSuperadmin ) {
+                const SQL = `SELECT u.id, u.role_id, ur.role_name, u.parent_id, u.name, u.email, u.date_of_birth, u.mobile_number FROM users u 
+                INNER JOIN user_roles ur ON u.role_id = ur.id 
+                WHERE u.id = ? AND u.status = ?`;
+                const [result] = await db.execute(SQL, [user_id, 1]);
+            } else {
+                const SQL = `SELECT u.id, u.role_id, ur.role_name, u.parent_id, u.name, u.email, u.date_of_birth, u.mobile_number FROM users u 
+                INNER JOIN user_roles ur ON u.role_id = ur.id 
+                WHERE u.id = ? AND parent_id = ? AND u.status = ?`;
+                const [result] = await db.execute(SQL, [user_id, logged_in_id, 1]);
+            }
+
+            if( result.length == 0 ) {
+                return res.status(404).json({response_data : {}, message : 'No user found', status : 404})    
+            } else {
+                return res.status(200).json({response_data : result[0], userinfo : req.user, message : 'User fetched successfully', status : 200})
+            }
+        }
+   
     } catch(catcherr) {
         // throw catcherr;
         return res.status(500).json({response_data : {}, message : 'Server error', status : 500});
@@ -1115,7 +1134,8 @@ async function grantBulkPermission(req, res) {
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
         const dataArr = req.body.dataArr;
-        const user_role_id = req.body.user_role_id;
+        // const user_role_id = req.body.user_role_id;
+        const user_id = req.body.user_id;
 
         if( isUserSuperadmin ) {
             // Iterate over each permission and execute the update query
@@ -1123,7 +1143,7 @@ async function grantBulkPermission(req, res) {
                 const query = `
                     UPDATE permissions 
                     SET create_permission = ?, delete_permission = ?, update_permission = ?, read_permission = ? 
-                    WHERE module_id = ? AND user_role_id = ?;
+                    WHERE module_id = ? AND user_id = ?;
                 `;
                 const values = [
                     permission.create_permission,
@@ -1131,7 +1151,7 @@ async function grantBulkPermission(req, res) {
                     permission.update_permission,
                     permission.read_permission,
                     permission.module_id,
-                    user_role_id
+                    user_id                    
                 ];
 
                 // Execute the query using your database connection instance
