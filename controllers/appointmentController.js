@@ -6,7 +6,7 @@ async function bookAppointment(req, res) {
 
         const {appointment_booked_by, patient_id, appointment_time, appointment_date, created_by, created_date} = req.body;
         const user_role_id = await commonFunctions.getUserRoleIdByUserId(appointment_booked_by);
-        const permissions = await commonFunctions.checkPermission(user_role_id, 'appointment', 'create_permission');
+        const permissions = await commonFunctions.checkPermission(appointment_booked_by, 'appointment', 'create_permission');
         
         if(permissions[0].create_permission == 1) {
             const SQL = `INSERT INTO appointments (appointment_booked_by, patient_id, appointment_time, appointment_date, created_by, created_date) VALUES (?,?,?,?,?,?)`;
@@ -105,10 +105,10 @@ async function viewPreviousAppointments(req, res) {
 
 async function markAppointmentAsCompleted(req, res) {
     try {
-        const {logged_in_user_id, appointment_id, prescription_details} = req.body;
-        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_user_id);
+        const {logged_in_id, appointment_id, prescription_details} = req.body;
+        // const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         
-        var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, 'appointments', 'update_permission');
+        var permissions = await commonFunctions.checkPermission(logged_in_id, 'appointments', 'update_permission');
 
         if(permissions[0].update_permission == 1) {
             const SQL = `UPDATE appointments SET is_completed = 1, prescription_details = ? WHERE id = ?`;
@@ -129,9 +129,9 @@ async function rejectAppointment(req, res) {
     try {
         const logged_in_id = req?.query?.logged_in_id || req.user.id;
         const appointment_id = req.body.appointment_id;
-        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        // const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         
-        var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, 'appointments', 'delete_permission');
+        var permissions = await commonFunctions.checkPermission(logged_in_id, 'appointments', 'delete_permission');
         
         if(permissions[0].delete_permission == 1) {
             const SQL = `UPDATE appointments SET status = 0 WHERE id = ?`;

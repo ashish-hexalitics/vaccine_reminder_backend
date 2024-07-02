@@ -49,6 +49,8 @@ userRouter.get('/testting', userController.testting);
 userRouter.post('/grant_permissions', userController.grantBulkPermission);
 userRouter.get('/get_all_permissions', userController.getAllPermissions);
 userRouter.get('/get_my_permissions', userController.getMyPermissions);
+userRouter.post('/search_user', userController.searchUser);
+
 
 // userRouter.get('/getallroles', userController.getAllRoles);
 

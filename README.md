@@ -12,3 +12,8 @@
 10.doctor vaccine template
 
 #Pramod Sir asked to change permissions module so that permissions should be set for specific user, not user role
+
+#I have made changes in the register API. So that whenever a user gets registered, a set of default permissions for all the present modules would be generated for that user.
+#Changed the permission module. Starting to use user id instead of user role id
+#updated the permissions table schema in the DB
+#Updated all the functions wherever permissions are involved.

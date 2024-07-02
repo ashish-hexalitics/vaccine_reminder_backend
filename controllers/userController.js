@@ -145,7 +145,7 @@ async function registerUser(req, res) {
                 let defaultPermissionSQL = `INSERT INTO permissions 
                 (user_id, user_role_id, module_name, module_id, 
                 create_permission, read_permission, update_permission, 
-                delete_permission, created_by, create_date)`;
+                delete_permission, created_by, created_date) VALUES `;
                 
                 const permValues = [];
                 const currentDate = new Date();
@@ -157,8 +157,8 @@ async function registerUser(req, res) {
                     permValues.push(newUserId, role_id, moduleresult[i].module_name, moduleresult[i].id, 0, 0, 0, 0, logged_in_id, currentDate);
                 }
 
-                const fqq = db.format(defaultPermissionSQL, permValues);
-                console.log(fqq);
+                // const fqq = db.format(defaultPermissionSQL, permValues);
+                // console.log(fqq);
                 await db.execute(defaultPermissionSQL, permValues);
 
                 //Assigning default permissions to the registered user
@@ -879,7 +879,7 @@ async function editStaff(req, res) {
         const logged_in_id = req?.body?.logged_in_id || req.user.id;
 
         const { user_id, name, email, date_of_birth, mobile_number, country, state, city, updated_date } = req.body;
-        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_user_id);
+        // const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         
         var permissions = await commonFunctions.checkPermission(logged_in_id, 'staff', 'update_permission');
         
@@ -1194,6 +1194,29 @@ async function getAllPermissions(req, res) {
     }
 }
 
+async function searchUser( req, res ) {
+
+    const searchQuery = req.query.q;
+    if (!searchQuery) {
+        return res.status(400).json({ message: 'Query parameter "q" is required' });
+        //test comment
+    }
+
+    const sql = `
+        SELECT id, role_id, parent_id, name FROM users 
+        WHERE LOWER(name) LIKE LOWER(?) 
+        OR LOWER(email) LIKE LOWER(?)`;
+    const query = `%${searchQuery}%`;
+
+    const [result] = await db.query(sql, [query, query]);
+
+    if( result.length > 0 ) {
+        res.status(200).json({response_data : result, message : 'All searched users', status : 200});
+    } else {
+        res.status(404).json({response_data : result, message : 'No Users Found', status : 404});
+    }
+}
+
 module.exports = {
     registerUser, 
     login,
@@ -1231,6 +1254,8 @@ module.exports = {
 
     grantBulkPermission,
     getAllPermissions,
-    getMyPermissions
+    getMyPermissions,
+
+    searchUser
 
 }

@@ -19,7 +19,7 @@ async function registerPatient(req, res) {
             
             if( !isUserSuperadmin ){
                 const role_name = await commonFunctions.getUserRoleNameByRoleId(logged_in_user_role_id);
-                var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'create_permission');
+                var permissions = await commonFunctions.checkPermission(logged_in_id, role_name, 'create_permission');
             }
             
             if( isUserSuperadmin || permissions[0].create_permission == 1 ) {
@@ -126,7 +126,7 @@ async function editPatient(req, res) {
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
-        var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'create_permission');
+        var permissions = await commonFunctions.checkPermission(logged_in_id, role_name, 'create_permission');
 
         if( isUserSuperadmin || permissions[0].update_permission == 1 ) {
 
@@ -153,7 +153,7 @@ async function deletePatient(req, res) {
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
-        var permissions = await commonFunctions.checkPermission(logged_in_user_role_id, role_name, 'delete_permission');
+        var permissions = await commonFunctions.checkPermission(logged_in_id, role_name, 'delete_permission');
 
         if( isUserSuperadmin || permissions[0].delete_permission == 1 ) {
             const SQL = `UPDATE patients SET status = 0 WHERE id = ?`;
