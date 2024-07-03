@@ -33,8 +33,8 @@ userRouter.get('/view_today_birthdays', userController.viewTodaysBirthdays);
 userRouter.get('/view_upcoming_birthdays', userController.viewUpcomingBirthdays);
 userRouter.post('/set_clinic_info', userController.registerClinicInfo);
 userRouter.get('/get_clinic_info', userController.getAllClinicInfo);
-userRouter.post('/get_all_doctors', userController.getAllDoctors);
-userRouter.post('/view_doctor_profile', commonFunctions.authenticateToken, userController.getDoctorProfile);
+userRouter.get('/get_all_doctors', userController.getAllDoctors);
+userRouter.get('/view_doctor_profile', commonFunctions.authenticateToken, userController.getDoctorProfile);
 userRouter.get('/test_token', userController.testToken);
 userRouter.post('/set_doctor_time_slots', userController.setDoctorTimeSlots);
 

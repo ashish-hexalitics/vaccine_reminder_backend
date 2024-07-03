@@ -54,7 +54,7 @@ async function getTotalCount(req, res) {
 
 async function getDashboardCounts (req, res) {
     try {
-        const logged_in_id = req.query.logged_in_id;
+        const logged_in_id = req?.query?.logged_in_id || req.user.id;
 
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         

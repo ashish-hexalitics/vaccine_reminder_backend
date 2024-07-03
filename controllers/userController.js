@@ -469,6 +469,8 @@ async function getAUser(req, res) {
             } else {
                 return res.status(200).json({response_data : result[0], userinfo : req.user, message : 'User fetched successfully', status : 200})
             }
+        } else {
+            return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403})
         }
    
     } catch(catcherr) {
@@ -683,6 +685,8 @@ async function editAdmin(req, res) {
         if( isUserSuperadmin ) {
 
             const SQL = `UPDATE users SET name = ?, email = ?, date_of_birth = ?, mobile_number = ?, status = ? WHERE id = ?`;
+            const formattedQ = db.format(SQL, [name, email, date_of_birth, mobile_number, status, user_id]);
+            // console.log(formattedQ);
             await db.execute(SQL, [name, email, date_of_birth, mobile_number, status, user_id]);
             res.status(200).json({response_data : {}, message : "Admin Updated Successfully", status : 200})
                 
@@ -1177,7 +1181,7 @@ async function getMyPermissions(req, res) {
     // const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
     
     const SQL = `SELECT * FROM permissions WHERE user_id = ?`;
-    const [result] = await db.execute(SQL, [logged_in_user_role_id]);
+    const [result] = await db.execute(SQL, [logged_in_id]);
 
     if( result.length > 0 ) {
         res.status(200).json({response_data : result, message : 'All Permissions for this user type', status : 200});

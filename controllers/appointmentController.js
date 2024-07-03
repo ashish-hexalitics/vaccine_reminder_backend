@@ -4,20 +4,24 @@ const commonFunctions = require('../utils/commonFunctions');
 async function bookAppointment(req, res) {
     try {
 
-        const {appointment_booked_by, patient_id, appointment_time, appointment_date, created_by, created_date} = req.body;
-        const user_role_id = await commonFunctions.getUserRoleIdByUserId(appointment_booked_by);
-        const permissions = await commonFunctions.checkPermission(appointment_booked_by, 'appointment', 'create_permission');
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        const { patient_id, appointment_time, appointment_date, created_by, created_date} = req.body;
+        const user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const permissions = await commonFunctions.checkPermission(logged_in_id, 'appointment', 'create_permission');
         
-        if(permissions[0].create_permission == 1) {
-            const SQL = `INSERT INTO appointments (appointment_booked_by, patient_id, appointment_time, appointment_date, created_by, created_date) VALUES (?,?,?,?,?,?)`;
-            const values = [appointment_booked_by, patient_id, appointment_time, appointment_date, created_by, created_date];
-            
-            await db.execute(SQL, values);
-            return res.status(200).json({ response_data : {}, message: 'Appointment booked successfully', status : 200 });
+        if(permissions != false) {
+            if(permissions[0].create_permission == 1) {
+                const SQL = `INSERT INTO appointments (appointment_booked_by, patient_id, appointment_time, appointment_date, created_by, created_date) VALUES (?,?,?,?,?,?)`;
+                const values = [logged_in_id, patient_id, appointment_time, appointment_date, created_by, created_date];
+                
+                await db.execute(SQL, values);
+                return res.status(200).json({ response_data : {}, message: 'Appointment booked successfully', status : 200 });
+            } else {
+                return res.status(403).json({ response_data : {}, message: 'You are not authorized to do this operation', status : 403 });
+            }
         } else {
-            return res.status(403).json({ response_data : {}, message: 'You are not authorized to do this operation', status : 403 });
+            return res.status(403).json({ response_data : {}, message: 'No permission is assigned to this user to perform this operation', status : 403 });
         }
-        
             
     } catch( catcherr ) {
         console.log(catcherr);
@@ -105,19 +109,27 @@ async function viewPreviousAppointments(req, res) {
 
 async function markAppointmentAsCompleted(req, res) {
     try {
-        const {logged_in_id, appointment_id, prescription_details} = req.body;
+
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        const { appointment_id, prescription_details } = req.body;
         // const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         
         var permissions = await commonFunctions.checkPermission(logged_in_id, 'appointments', 'update_permission');
+        
+        if ( permissions != false ) {
 
-        if(permissions[0].update_permission == 1) {
-            const SQL = `UPDATE appointments SET is_completed = 1, prescription_details = ? WHERE id = ?`;
-            await db.execute(SQL, [prescription_details, appointment_id]);
-
-            return res.status(200).json({response_data : {}, message : 'Information updated successfully', status : 200});
+            if(permissions[0].update_permission == 1) {
+                const SQL = `UPDATE appointments SET is_completed = 1, prescription_details = ? WHERE id = ?`;
+                await db.execute(SQL, [prescription_details, appointment_id]);
+    
+                return res.status(200).json({response_data : {}, message : 'Information updated successfully', status : 200});
+            } else {
+                return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+            }
         } else {
-            return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+            return res.status(403).json({response_data : {}, message : 'No permission is assigned to this user to perform this operation', status : 403});
         }
+        
     } catch(catcherr) {
         throw catcherr;
     }
@@ -133,14 +145,19 @@ async function rejectAppointment(req, res) {
         
         var permissions = await commonFunctions.checkPermission(logged_in_id, 'appointments', 'delete_permission');
         
-        if(permissions[0].delete_permission == 1) {
-            const SQL = `UPDATE appointments SET status = 0 WHERE id = ?`;
-            await db.execute(SQL, [appointment_id]);
-
-            return res.status(200).json({response_data : {}, message : 'Information updated successfully', status : 200});
+        if( permissions != false ) {
+            if(permissions[0].delete_permission == 1) {
+                const SQL = `UPDATE appointments SET status = 0 WHERE id = ?`;
+                await db.execute(SQL, [appointment_id]);
+    
+                return res.status(200).json({response_data : {}, message : 'Information updated successfully', status : 200});
+            } else {
+                return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+            }
         } else {
-            return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+            return res.status(403).json({response_data : {}, message : 'No permission is assigned to this user to perform this operation', status : 403});
         }
+        
     } catch(catcherr) {
         throw catcherr;
     }

@@ -12,7 +12,7 @@ async function registerPatient(req, res) {
         try {
 
             const logged_in_id = req?.body?.logged_in_id || req.user.id;
-            const { parent_id, mobile_number, name, gender, date_of_birth, vaccine_ids, created_by, created_date } = req.body
+            const { mobile_number, name, gender, date_of_birth, vaccine_ids, created_date } = req.body
 
             const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
             const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
@@ -28,10 +28,12 @@ async function registerPatient(req, res) {
                     return res.status(400).json({ message: 'Invalid gender value given. The valid values are M, F, and O' });
                 }
 
-                var query = 'INSERT INTO patients (parent_id, mobile_number, name, gender, date_of_birth, vaccine_ids, created_by, created_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-                var values = [parent_id, mobile_number, name, gender, date_of_birth, vaccine_ids, created_by, created_date];
+                var SQL = 'INSERT INTO patients (parent_id, mobile_number, name, gender, date_of_birth, vaccine_ids, created_by, created_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+                var values = [logged_in_id, mobile_number, name, gender, date_of_birth, vaccine_ids, logged_in_id, created_date];
 
-                [result] = await db.execute(query, values);
+                const formattedQuery = db.format(SQL, values);
+                
+                [result] = await db.execute(SQL, values);
 
                 //Calculating the scheduled time period for vaccination
 
