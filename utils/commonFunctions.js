@@ -63,6 +63,25 @@ async function isDoctor(user_role_id) {
     }
 }
 
+async function isClient(user_role_id) {
+    try{
+        const [result] = await db.execute(`SELECT role_name FROM user_roles WHERE id = ?`, [user_role_id]);
+        
+        if(result.length > 0){
+            const role_name = result[0].role_name;
+            if (role_name.toLowerCase() === 'doctor' || role_name.toLowerCase() === 'staff') {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return 0;
+        }
+    } catch(catcherr) {
+        throw catcherr;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function auth(req,res,next){
@@ -385,12 +404,48 @@ async function isVaccineForPatient(vaccine_id, patient_id) {
     }
 }
 
-async function isClient( email_or_number ) {
+async function isClientLogin( email_or_number ) {
     try {
         const SQL1 = `SELECT user_roles.id FROM user_roles 
         INNER JOIN users ON users.role_id = user_roles.id 
         WHERE (email = ? OR mobile_number = ?) 
         AND user_roles.role_name IN ('Doctor', 'Staff')`;
+        const [result1] = await db.execute(SQL1, [email_or_number, email_or_number]);
+        
+        if ( result1.length > 0 ) {
+            return true;
+        } 
+        return false;
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+async function isAdminLogin( email_or_number ) {
+    try {
+        const SQL1 = `SELECT user_roles.id FROM user_roles 
+        INNER JOIN users ON users.role_id = user_roles.id 
+        WHERE (email = ? OR mobile_number = ?) 
+        AND user_roles.role_name IN ('Admin')`;
+        const [result1] = await db.execute(SQL1, [email_or_number, email_or_number]);
+        
+        if ( result1.length > 0 ) {
+            return true;
+        } 
+        return false;
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+async function isSuperAdminLogin( email_or_number ) {
+    try {
+        const SQL1 = `SELECT user_roles.id FROM user_roles 
+        INNER JOIN users ON users.role_id = user_roles.id 
+        WHERE (email = ? OR mobile_number = ?) 
+        AND user_roles.role_name IN ('Superadmin')`;
         const [result1] = await db.execute(SQL1, [email_or_number, email_or_number]);
         
         if ( result1.length > 0 ) {
@@ -410,6 +465,7 @@ module.exports={
     isSuperAdmin,
     isAdmin,
     isDoctor,
+    isClient, //Either doctor or staff
     isEmailAlreadyRegistered,
     authenticateToken,
     checkPermission,
@@ -421,5 +477,7 @@ module.exports={
     getUserRoleNameByRoleId,
     isVaccineAssignedToDoctor, //2024-06-14
     isVaccineForPatient, //2024-06-14
-    isClient
+    isClientLogin, // To check if client is attempting to login
+    isSuperAdminLogin, // To check if Superadmin is attempting to login
+    isAdminLogin // To check if admin is attempting to login
 }

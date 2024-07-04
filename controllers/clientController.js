@@ -11,7 +11,7 @@ async function login(req, res) {
 
     try {
 
-        isUserClient = await commonFunctions.isClient( email_or_number );
+        isUserClient = await commonFunctions.isClientLogin( email_or_number );
         
         if ( !isUserClient ) {
             return res.status(404).json({response_data : {}, message : 'You are trying to login with wrong user type', status : 404});
@@ -56,7 +56,8 @@ async function login(req, res) {
             return res.status(200).json({ 
                 response_data : { user_data: [user] }, 
                 token: accessToken, 
-                message: "Logged in Successfully" 
+                message: "Logged in Successfully",
+                status : 200
             });
         } else {
             return res.status(400).json({ 
@@ -247,11 +248,44 @@ async function resetPassword(req, res) {
 
 }
 
+async function registerPatient ( req, res ) {
+    
+    try {
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        const { name, gender, date_of_birth, mobile_number } = req.body;
+
+        const isUserClient = await commonFunctions.isClient(logged_in_id);
+
+        if( !isUserClient ) {
+            return res.status(403).json({response_data : {}, message : 'You are trying to register a patient through wrong user type', status : 403});
+        }
+
+        const isUserDoctor = await commonFunctions.isDoctor(logged_in_id);
+
+        if( isUserDoctor ) {
+           
+            
+            const SQL1 = `INSERT INTO patients_parent (master_id, mobile_number, name, gender, date_of_birth, vaccine_ids, created_by) VALUES (?,?,?,?,?,?,?)`;
+        
+            const values1 = [logged_in_id, mobile_number, name, gender, date_of_birth];
+            await db.execute(SQL1, values1);
+        } else {
+
+        }
+
+        
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
 module.exports = {
     login,
     getStaffList,
     deleteStaff,
     viewTodaysBirthdays,
     viewUpcomingBirthdays,
-    resetPassword
+    resetPassword,
+    registerPatient
 }

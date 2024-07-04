@@ -5,6 +5,145 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 
+async function registerUser(req, res) {
+
+    try{
+        
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        const {
+            role_id, 
+            name, 
+            email, 
+            password, 
+            date_of_birth, 
+            mobile_number,
+        } = req.body;
+        const isValidUser = await commonFunctions.checkValidUserId(logged_in_id);
+        
+        if(!isValidUser) {
+            return res.status(404).json({
+                response_data : {}, 
+                message : 'Invalid id of logged in user', 
+                status : 404 
+            });
+        }
+
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        
+        const registeredUserRoleName = await commonFunctions.getUserRoleNameByRoleId(role_id);
+        
+        if(registeredUserRoleName == 'superadmin'){    
+            return res.status(403).json({
+                response_data : {}, 
+                message : 'You are not authorized to perform this operation', 
+                status : 403 
+            });
+        }
+
+        if ( !isUserSuperadmin ) {
+            var permissions = await commonFunctions.checkPermission(logged_in_id, registeredUserRoleName, 'create_permission');
+            if(permissions != false && permissions[0].create_permission == 1) {
+                canCreate = true;
+            } else {
+                canCreate = false;
+            }
+        } else {
+            canCreate = true;
+        }
+        
+            if( canCreate ) {
+
+                const hashedPassword = await bcrypt.hash(password, 10);
+                const SQL = `INSERT INTO users (role_id, parent_id, name, email, password, date_of_birth, mobile_number, created_by, created_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                
+                const values = [
+                    role_id, 
+                    logged_in_id, 
+                    name, 
+                    email, 
+                    hashedPassword, 
+                    date_of_birth, 
+                    mobile_number, 
+                    logged_in_id, 
+                    new Date()
+                ];
+                
+                const emailRegistered = await commonFunctions.isEmailAlreadyRegistered(email);
+                if (emailRegistered) {
+                    return res.status(403).json({ response_data: {}, message: "Email already in use", status: 403 });
+                }
+
+                const formattedQuery = db.format(SQL, values);
+                const [result] = await db.execute(SQL, values);
+                
+                const newUserId = result.insertId;
+
+                const SQL1 = `SELECT id, module_name FROM modules`;
+                const [moduleresult] = await db.execute(SQL1);
+                
+                //Assigning default permissions to the registered user
+
+                let defaultPermissionSQL = `INSERT INTO permissions 
+                (user_id, user_role_id, module_name, module_id, 
+                create_permission, read_permission, update_permission, 
+                delete_permission, created_by, created_date) VALUES `;
+                
+                const permValues = [];
+                const currentDate = new Date();
+                for (let i = 0; i < moduleresult.length; i++) {
+                    defaultPermissionSQL += '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                    if (i < moduleresult.length - 1) {
+                        defaultPermissionSQL += ', ';
+                    }
+                    permValues.push(newUserId, role_id, moduleresult[i].module_name, moduleresult[i].id, 0, 0, 0, 0, logged_in_id, currentDate);
+                }
+
+                await db.execute(defaultPermissionSQL, permValues);
+
+                //Assigning default permissions to the registered user
+
+                const isRegisteredUserDoctor = await commonFunctions.checkedDoctorByRoleId(role_id);
+                
+                if ( isRegisteredUserDoctor ) {
+
+                    const copySQL1 = `INSERT INTO doctor_master_vaccine (doctor_id, name, description, vaccine_range, 
+                        range_type, is_mandatory, is_default, created_by, created_date)
+                        SELECT ?, name, description, vaccine_range, 
+                            range_type, is_mandatory, is_default, 
+                            created_by, created_date
+                        FROM master_vaccine WHERE created_by= ?`;
+
+                    await db.execute(copySQL1, [newUserId, logged_in_id]);
+
+                    const copySQL2 = `INSERT INTO doctor_master_vaccine_details (doctor_id, master_vaccine_id, name, 
+                        description, vaccine_range, range_type, version_number, is_mandatory, created_by, created_date)
+                        SELECT ?, master_vaccine_id, name, 
+                        description, vaccine_range, range_type, version_number, is_mandatory, created_by, created_date
+                        FROM master_vaccine_details WHERE created_by = ?`;
+
+                    await db.execute(copySQL2, [newUserId, logged_in_id]);
+
+                }
+
+                return res.status(200).json({
+                    response_data : {}, 
+                    message : 'User Registered Successfully', 
+                    status : 200 
+                });
+            } else {
+                return res.status(403).json({
+                    response_data : {}, 
+                    message : 'You are not authorized to perform this operation', 
+                    status : 403 
+                });
+            }
+        
+    } catch(catcherr) {
+        throw catcherr;
+    }
+}
+
 async function login(req, res) {
 
     const email_or_number = req.body.email;
@@ -12,10 +151,10 @@ async function login(req, res) {
 
     try {
 
-        isUserAdmin = await commonFunctions.isAdmin( email_or_number );
-        isUserSuperAdmin = await commonFunctions.isSuperAdmin( email_or_number );
+        isUserAdmin = await commonFunctions.isAdminLogin( email_or_number );
+        isUserSuperAdmin = await commonFunctions.isSuperAdminLogin( email_or_number );
         
-        if ( !isUserAdmin || !isUserSuperAdmin  ) {
+        if ( !isUserAdmin && !isUserSuperAdmin  ) {
             return res.status(404).json({response_data : {}, message : 'You are trying to login with wrong user type', status : 404});
         }
 
@@ -56,9 +195,10 @@ async function login(req, res) {
             
 
             return res.status(200).json({ 
-                response_data : user, 
+                response_data : {user_data: user},
                 token: accessToken, 
-                message: "Logged in Successfully" 
+                message: "Logged in Successfully",
+                status : 200
             });
         } else {
             return res.status(400).json({ 
@@ -83,7 +223,7 @@ async function createMasterVaccineTemplate(req, res) {
 
         const logged_in_id = req?.body?.logged_in_id || req.user.id;
         
-        const { name, description, vaccine_range, range_type, is_mandatory, created_by, created_date} = req.body;
+        const { name, description, vaccine_range, range_type, is_mandatory } = req.body;
         const role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         
         if(role_id == 0) {
@@ -98,9 +238,9 @@ async function createMasterVaccineTemplate(req, res) {
         if(isUserSuperAdmin) {
             
             let query = `INSERT INTO master_vaccine (name, description, vaccine_range, range_type, is_mandatory, created_by, created_date) VALUES (?,?,?,?,?,?,?)`;
-            const values = [name, description, vaccine_range, range_type, is_mandatory, created_by, created_date];
+            const values = [name, description, vaccine_range, range_type, is_mandatory, logged_in_id, new Date()];
             await db.query(query, values);
-            return res.status(200).json({response_data : {}, message : "Information stored sucessfully", status : 200});
+            return res.status(200).json({response_data : {}, message : "Vaccine template created sucessfully", status : 200});
             
         } else {
             return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
@@ -111,20 +251,21 @@ async function createMasterVaccineTemplate(req, res) {
     
 }
 
-async function createMasterVaccineDetails(req, res) {
+async function createMasterVaccineTemplateDetails(req, res) {
     try {
 
         const logged_in_id = req?.body?.logged_in_id || req.user.id;
-        const { master_vaccine_id, name, description, vaccine_range, range_type, is_mandatory, created_date} = req.body;
+        const { master_vaccine_id, name, description, vaccine_range, range_type, version_number, is_mandatory } = req.body;
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+        const isUserSuperAdmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
-        if( isUserAdmin ) {
+        if( isUserAdmin || isUserSuperAdmin ) {
             const SQL = `INSERT INTO master_vaccine_details 
-            (master_vaccine_id, name, description, vaccine_range, range_type, is_mandatory, created_by, created_date) VALUES
-            (?,?,?,?,?,?,?,?)`;
+            (master_vaccine_id, name, description, vaccine_range, range_type, version_number, is_mandatory, created_by, created_date) VALUES
+            (?,?,?,?,?,?,?,?,?)`;
 
-            const values = [master_vaccine_id, name, description, vaccine_range, range_type, is_mandatory, logged_in_id, created_date]
+            const values = [master_vaccine_id, name, description, vaccine_range, range_type, version_number, is_mandatory, logged_in_id, new Date()]
 
             await db.execute(SQL, values);
             return res.status(200).json({response_data : {}, 'message' : 'Master vaccine details has been set successfully', status : 200});
@@ -138,7 +279,168 @@ async function createMasterVaccineDetails(req, res) {
     }
 }
 
+async function createEvent(req, res) {
+
+    try {
+        const logged_in_id = req.body.logged_in_id || req.user.id;
+        const {
+            event_name, 
+            event_description, 
+            event_date,
+        } = req.body;
+
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        isUserSuperAdmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+        let SQL;
+        if( isUserSuperAdmin || isUserAdmin ) {
+            SQL = `INSERT INTO events (event_name, event_description, event_date, created_by, created_date) 
+            VALUES (?, ?, ?, ?, ?)`;
+            const values = [event_name, event_description, event_date, logged_in_id, new Date()];
+            await db.execute(SQL, values);
+
+            res.status(200).json({response_data : {}, message : 'Event has been created successfully', status : 200});
+
+        } else {
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+        }
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+async function getUpcomingEvents(req, res) {
+    
+    try {
+        
+        const logged_in_id = req?.query?.logged_in_id || req.user.id;
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        isUserSuperAdmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+        let SQL;
+
+        if( isUserSuperAdmin || isUserAdmin ) {
+            SQL = `SELECT event_name, event_description, event_date, created_by FROM events 
+            WHERE DATE_FORMAT(event_date, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') AND status = ? 
+            ORDER BY DATE_FORMAT(event_date, '%m-%d') LIMIT 10`;
+
+            const [result] = await db.execute(SQL, [1]);
+            
+            if ( result.length > 0 ) {
+                res.status(200).json({response_data : {}, message : 'List of all upcoming events', status : 200});
+            } else {
+                res.status(404).json({response_data : {}, message : 'No upcoming events found', status : 404});
+            }
+
+        } else {
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+        }
+            
+    } catch (catcherr) {
+        throw catcherr;
+    }
+    
+}
+
+async function editEvent(req, res){
+    try {
+        
+        const logged_in_id = req?.query?.logged_in_id || req.user.id;
+        const {event_id, event_name, event_description, event_date} = req.query;
+        console.log("data", req.query);
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        
+        isUserSuperAdmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+        let SQL;
+
+        if ( isUserSuperAdmin || isUserAdmin ) {
+            SQL = `UPDATE events SET event_name = ?, event_description = ?, event_date = ? WHERE id = ? AND created_by = ?`;
+            const values = [event_name, event_description, event_date, event_id, logged_in_id];
+
+            await db.execute(SQL, values);
+            res.status(200).json({response_data : {}, message : 'Event has been updated successfully', status : 200});
+        } else {
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+        }
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+async function viewEvent(req, res) {
+
+    try {
+        
+        const logged_in_id = req?.query?.logged_in_id || req.user.id;
+        const event_id = req.query.event_id;
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        
+        isUserSuperAdmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+        let SQL;
+
+        if ( isUserSuperAdmin || isUserAdmin ) {
+            SQL = `SELECT id, event_name, event_description, event_date FROM events 
+            WHERE id = ? AND status = ? AND created_by = ?`;
+
+            const values = [event_id, 1, logged_in_id];
+            
+            const [result] = await db.execute(SQL, values);
+
+            if ( result.length > 0 ) {
+                res.status(200).json({response_data : { event_data: [result[0]] }, message : 'Event fetched sucessfully', status : 200});
+            } else {
+                res.status(404).json({response_data : {}, message : 'Either this event is not found or it is not active', status : 404});
+            }
+
+        } else {
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+        }
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+async function deleteEvent(req, res) {
+
+    try {
+        const logged_in_id = req?.query?.logged_in_id || req.user.id;
+        const event_id = req.query.event_id;
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        
+        isUserSuperAdmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+        let SQL;
+
+        if ( isUserSuperAdmin || isUserAdmin ) {
+
+            SQL = `UPDATE events SET status = ? WHERE id = ?`;
+            const values = [0, event_id];
+
+            await db.execute(SQL, values);
+
+            res.status(200).json({response_data : {}, message : 'Event deleted successfully', status : 200});
+            
+        } else {
+            res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+        }
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
 module.exports = {
+    registerUser,
+    login,
     createMasterVaccineTemplate,
-    createMasterVaccineDetails
+    createMasterVaccineTemplateDetails,
+    createEvent,
+    getUpcomingEvents,
+    editEvent,
+    viewEvent,
+    deleteEvent
 }
