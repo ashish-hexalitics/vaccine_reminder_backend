@@ -10,6 +10,7 @@ const patientRouter = require('./routes/patientRoutes');
 const appointmentRouter = require('./routes/appointmentRoutes');
 const commonRouter = require('./routes/commonRoutes');
 const eventRouter = require('./routes/eventRoutes');
+const clientRouter = require('./routes/clientRoutes');
 
 const jwtMiddleware = require('./middlewares/jwtMiddleware');
 
@@ -45,12 +46,15 @@ app.get('/loginview', (req, res) => {
 // app.use('/api', jwtMiddleware);
 
 app.use('/api/user', userRouter)
+app.use('/api/client', clientRouter);
 app.use('/api/patient', jwtMiddleware, patientRouter)
 app.use('/api/vaccine', jwtMiddleware, vaccineRouter)
 app.use('/api/notification', jwtMiddleware, notificationRouter)
 app.use('/api/appointment', jwtMiddleware, appointmentRouter)
 app.use('/api/common', jwtMiddleware, commonRouter)
 app.use('/api/event', jwtMiddleware, eventRouter);
+
+
 
 app.listen(port, () => {
     console.log('Server is running on port ' + port)

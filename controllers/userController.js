@@ -768,7 +768,7 @@ async function getAllClinicInfo(req, res) {
         
         const [result] = await db.execute(SQL);
         if(result.length > 0) {
-            return res.status(200).json({response_data : result, message : "All clinics", status : 200});
+        return res.status(200).json({response_data : {doctors:result, countries:result}, message : "All clinics", status : 200});
         } else {
             return res.status(404).json({response_data : {}, message : "No clinic found", status : 404});
         }

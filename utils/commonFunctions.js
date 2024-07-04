@@ -385,6 +385,24 @@ async function isVaccineForPatient(vaccine_id, patient_id) {
     }
 }
 
+async function isClient( email_or_number ) {
+    try {
+        const SQL1 = `SELECT user_roles.id FROM user_roles 
+        INNER JOIN users ON users.role_id = user_roles.id 
+        WHERE (email = ? OR mobile_number = ?) 
+        AND user_roles.role_name IN ('Doctor', 'Staff')`;
+        const [result1] = await db.execute(SQL1, [email_or_number, email_or_number]);
+        
+        if ( result1.length > 0 ) {
+            return true;
+        } 
+        return false;
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 module.exports={
@@ -402,5 +420,6 @@ module.exports={
     calculateVaccineSchedule,
     getUserRoleNameByRoleId,
     isVaccineAssignedToDoctor, //2024-06-14
-    isVaccineForPatient //2024-06-14
+    isVaccineForPatient, //2024-06-14
+    isClient
 }
