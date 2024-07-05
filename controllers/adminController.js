@@ -107,22 +107,26 @@ async function registerUser(req, res) {
                 
                 if ( isRegisteredUserDoctor ) {
 
-                    const copySQL1 = `INSERT INTO doctor_master_vaccine (doctor_id, name, description, vaccine_range, 
-                        range_type, is_mandatory, is_default, created_by, created_date)
-                        SELECT ?, name, description, vaccine_range, 
-                            range_type, is_mandatory, is_default, 
+                    const copySQL1 = `INSERT INTO doctor_master_vaccine_template (doctor_id, name, description, created_by, created_date)
+                        SELECT ?, name, description, 
                             created_by, created_date
-                        FROM master_vaccine WHERE created_by= ?`;
+                        FROM master_vaccine_template WHERE created_by= ?`;
 
-                    await db.execute(copySQL1, [newUserId, logged_in_id]);
+                    const resultcopySQL = await db.execute(copySQL1, [newUserId, logged_in_id]);
 
-                    const copySQL2 = `INSERT INTO doctor_master_vaccine_details (doctor_id, master_vaccine_id, name, 
+                    const doc_template_id = resultcopySQL.insertId;
+
+                    const copySQL2 = `INSERT INTO doctor_master_vaccine_template_vaccines (doctor_id, master_vaccine_template_id, doctor_master_vaccine_template_id, name, 
                         description, vaccine_range, range_type, version_number, is_mandatory, created_by, created_date)
-                        SELECT ?, master_vaccine_id, name, 
+                        SELECT ?, master_vaccine_id, ?, name, 
                         description, vaccine_range, range_type, version_number, is_mandatory, created_by, created_date
-                        FROM master_vaccine_details WHERE created_by = ?`;
+                        FROM master_vaccine_template_vaccines WHERE created_by = ?`;
 
-                    await db.execute(copySQL2, [newUserId, logged_in_id]);
+
+                    const formattedQuery1 = db.format(copySQL2, [newUserId, doc_template_id, logged_in_id]);
+                    console.log(formattedQuery1);
+
+                    await db.execute(copySQL2, [newUserId, doc_template_id, logged_in_id]);
 
                 }
 
@@ -223,7 +227,7 @@ async function createMasterVaccineTemplate(req, res) {
 
         const logged_in_id = req?.body?.logged_in_id || req.user.id;
         
-        const { name, description, vaccine_range, range_type, is_mandatory } = req.body;
+        const { name, description } = req.body;
         const role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         
         if(role_id == 0) {
@@ -237,8 +241,8 @@ async function createMasterVaccineTemplate(req, res) {
         }
         if(isUserSuperAdmin) {
             
-            let query = `INSERT INTO master_vaccine (name, description, vaccine_range, range_type, is_mandatory, created_by, created_date) VALUES (?,?,?,?,?,?,?)`;
-            const values = [name, description, vaccine_range, range_type, is_mandatory, logged_in_id, new Date()];
+            let query = `INSERT INTO master_vaccine_template (name, description, created_by, created_date) VALUES (?,?,?,?)`;
+            const values = [name, description, logged_in_id, new Date()];
             await db.query(query, values);
             return res.status(200).json({response_data : {}, message : "Vaccine template created sucessfully", status : 200});
             
@@ -251,24 +255,45 @@ async function createMasterVaccineTemplate(req, res) {
     
 }
 
-async function createMasterVaccineTemplateDetails(req, res) {
+async function createMasterVaccineTemplateVaccines(req, res) {
     try {
 
         const logged_in_id = req?.body?.logged_in_id || req.user.id;
-        const { master_vaccine_id, name, description, vaccine_range, range_type, version_number, is_mandatory } = req.body;
+        // const { master_vaccine_id, name, description, vaccine_range, range_type, version_number, is_mandatory } = req.body;
+        const vaccines = req.body.vaccines; // Assume this is an array of vaccine objects //To add multiple vaccines at once
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
         const isUserSuperAdmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
         if( isUserAdmin || isUserSuperAdmin ) {
-            const SQL = `INSERT INTO master_vaccine_details 
-            (master_vaccine_id, name, description, vaccine_range, range_type, version_number, is_mandatory, created_by, created_date) VALUES
-            (?,?,?,?,?,?,?,?,?)`;
+            // const SQL = `INSERT INTO master_vaccine_template_vaccines 
+            // (master_vaccine_id, name, description, vaccine_range, range_type, version_number, is_mandatory, created_by, created_date) VALUES
+            // (?,?,?,?,?,?,?,?,?)`;
 
-            const values = [master_vaccine_id, name, description, vaccine_range, range_type, version_number, is_mandatory, logged_in_id, new Date()]
+            const baseSQL = `INSERT INTO master_vaccine_template_vaccines 
+            (master_vaccine_id, name, description, vaccine_range, range_type, version_number, is_mandatory, created_by, created_date) VALUES `;
 
+            const valuePlaceholders = vaccines.map(() => '(?,?,?,?,?,?,?,?,?)').join(',');
+            const SQL = baseSQL + valuePlaceholders;
+            // const values = [master_vaccine_id, name, description, vaccine_range, range_type, version_number, is_mandatory, logged_in_id, new Date()]
+            
+            const values = vaccines.flatMap(vaccine => [
+                vaccine.master_vaccine_id, 
+                vaccine.name, 
+                vaccine.description, 
+                vaccine.vaccine_range, 
+                vaccine.range_type, 
+                vaccine.version_number, 
+                vaccine.is_mandatory, 
+                logged_in_id, 
+                new Date()
+            ]);
+
+            // await db.execute(SQL, values);
+            const formattedQuery = db.format(SQL, [values]);
+            console.log(formattedQuery);
             await db.execute(SQL, values);
-            return res.status(200).json({response_data : {}, 'message' : 'Master vaccine details has been set successfully', status : 200});
+            return res.status(200).json({response_data : {}, 'message' : 'Master vaccine template vaccine has been set successfully', status : 200});
 
         } else {
             return res.status(403).json({response_data : {}, 'message' : 'You are not authorized to perform this operation', status : 403});
@@ -437,7 +462,7 @@ module.exports = {
     registerUser,
     login,
     createMasterVaccineTemplate,
-    createMasterVaccineTemplateDetails,
+    createMasterVaccineTemplateVaccines,
     createEvent,
     getUpcomingEvents,
     editEvent,
