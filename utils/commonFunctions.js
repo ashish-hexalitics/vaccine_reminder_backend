@@ -63,6 +63,25 @@ async function isDoctor(user_role_id) {
     }
 }
 
+async function isStaff( user_role_id ) {
+    try{
+        const [result] = await db.execute(`SELECT role_name FROM user_roles WHERE id = ?`, [user_role_id]);
+        
+        if(result.length > 0){
+            const role_name = result[0].role_name;
+            if (role_name.toLowerCase() === 'staff') {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return 0;
+        }
+    } catch(catcherr) {
+        throw catcherr;
+    }
+}
+
 async function isClient(user_role_id) {
     try{
         const [result] = await db.execute(`SELECT role_name FROM user_roles WHERE id = ?`, [user_role_id]);
@@ -178,6 +197,8 @@ async function checkPermission(user_id, module, permission) {
 async function getUserRoleIdByUserId(user_id){
     try{
         const SQL = `SELECT user_roles.id as role_id FROM user_roles INNER JOIN users ON user_roles.id = users.role_id WHERE users.id = ?`;
+        const formattedQQQQ = db.format(SQL, [user_id]);
+        console.log(formattedQQQQ, "line 200 of commonfunctions");
         const [rows] = await db.execute(SQL, [user_id]);
 
         if(rows && rows.length > 0) {
@@ -245,9 +266,10 @@ async function getUserRoleNameByRoleId(user_role_id) {
         // console.log('Executing Query Commonfunctions:', formattedQuery);
         const [result] = await db.execute(SQL, [user_role_id]);
         
-        const user_role_name = result[0].role_name;
+        
 
         if ( result.length > 0 ) {
+            const user_role_name = result[0].role_name;
             return user_role_name.toLowerCase();
         } else {
             return 0;
@@ -284,12 +306,13 @@ async function getUserRoleNameByRoleId(user_role_id) {
 async function calculateVaccineSchedule(patient_id) {
     try {
         
-        const SQL = `SELECT id, parent_id, name, date_of_birth, vaccine_ids FROM patients WHERE id = ?`;
+        // const SQL = `SELECT id, parent_id, name, date_of_birth, vaccine_ids FROM patients WHERE id = ?`;
+        const SQL = `SELECT id, master_id, name, date_of_birth, vaccine_ids FROM patients WHERE id = ?`;
         const [rows, fields] = await db.execute(SQL, [patient_id]);
 
         //If patient has been registered by staff instead of a doctor - START
         
-        const user_role_id = await getUserRoleIdByUserId(rows[0].parent_id); //Role id of staff
+        const user_role_id = await getUserRoleIdByUserId(rows[0].master_id); //Role id of staff
         const user_role_name = await getUserRoleNameByRoleId(user_role_id);  //Role name of staff
         
         let doctor_id;
@@ -297,12 +320,12 @@ async function calculateVaccineSchedule(patient_id) {
         if( user_role_name === 'staff' ) {
             
             const fetchParentDocSQL = `SELECT parent_id FROM users WHERE id = ?`
-            const [parentDocResult] = await db.execute(fetchParentDocSQL, [rows[0].parent_id]);
-            doctor_id = parentDocResult[0].parent_id;
+            const [parentDocResult] = await db.execute(fetchParentDocSQL, [rows[0].master_id]);
+            doctor_id = parentDocResult[0].master_id;
 
         } else {
             
-            doctor_id = rows[0].parent_id;
+            doctor_id = rows[0].master_id;
 
         }
         
@@ -313,8 +336,9 @@ async function calculateVaccineSchedule(patient_id) {
             const vaccineIds = rows[0].vaccine_ids.split(",");
             
             const placeholders = vaccineIds.map(() => '?').join(',');
-            const SQL1 = `SELECT id, vaccine_range, range_type FROM doctor_master_vaccine WHERE id IN (${placeholders}) AND doctor_id = ?`;
-            
+            const SQL1 = `SELECT id, vaccine_range, range_type FROM doctor_master_vaccine_template_vaccines WHERE id IN (${placeholders}) AND doctor_id = ?`;
+            const formattedQQ = db.format(SQL1, [...vaccineIds, doctor_id]);
+            console.log(formattedQQ);
             // const [rangeArr] = await db.execute(SQL1, [...vaccineIds, rows[0].parent_id]);
             const [rangeArr] = await db.execute(SQL1, [...vaccineIds, doctor_id]);
             
@@ -479,5 +503,6 @@ module.exports={
     isVaccineForPatient, //2024-06-14
     isClientLogin, // To check if client is attempting to login
     isSuperAdminLogin, // To check if Superadmin is attempting to login
-    isAdminLogin // To check if admin is attempting to login
+    isAdminLogin, // To check if admin is attempting to login
+    isStaff
 }

@@ -12,6 +12,7 @@ clientRouter.post('/reset_password', clientController.resetPassword);
 
 clientRouter.use(jwtMiddleware);
 
+clientRouter.post('/register_staff', clientController.registerStaff);
 clientRouter.get('/get_staff_list', clientController.getStaffList);
 clientRouter.get('/view_todays_birthdays', clientController.viewTodaysBirthdays);
 clientRouter.get('/view_upcoming_birthdays', clientController.viewUpcomingBirthdays);

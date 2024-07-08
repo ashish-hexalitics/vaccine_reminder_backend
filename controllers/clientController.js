@@ -272,38 +272,6 @@ async function resetPassword(req, res) {
 
 }
 
-async function registerPatient ( req, res ) {
-    
-    try {
-        const logged_in_id = req?.body?.logged_in_id || req.user.id;
-        const { name, gender, date_of_birth, mobile_number } = req.body;
-
-        const isUserClient = await commonFunctions.isClient(logged_in_id);
-
-        if( !isUserClient ) {
-            return res.status(403).json({response_data : {}, message : 'You are trying to register a patient through wrong user type', status : 403});
-        }
-
-        const isUserDoctor = await commonFunctions.isDoctor(logged_in_id);
-
-        if( isUserDoctor ) {
-           
-            
-            const SQL1 = `INSERT INTO patients_parent (master_id, mobile_number, name, gender, date_of_birth, vaccine_ids, created_by) VALUES (?,?,?,?,?,?,?)`;
-        
-            const values1 = [logged_in_id, mobile_number, name, gender, date_of_birth];
-            await db.execute(SQL1, values1);
-        } else {
-
-        }
-
-        
-
-    } catch (catcherr) {
-        throw catcherr;
-    }
-}
-
 async function getDoctorVaccineTemplates ( req, res ) {
     try {
         const logged_in_id = req?.body?.logged_in_id || req.user.id;
@@ -345,7 +313,7 @@ async function getDoctorVaccineTemplateVaccines ( req, res ) {
         if ( isUserDoctor ) {
             let SQL = `SELECT name, description, vaccine_range, range_type, version_number, is_mandatory 
             FROM doctor_master_vaccine_template_vaccines
-            WHERE master_vaccine_id = ? AND status = ?`;
+            WHERE master_vaccine_template_id = ? AND status = ?`;
 
             const [result] = await db.execute( SQL, [vaccine_template_id, 1] );
 
@@ -363,7 +331,145 @@ async function getDoctorVaccineTemplateVaccines ( req, res ) {
     }
 }
 
+async function editDoctorVaccineTemplate( req, res ) {
+    try {
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        const doctor_vaccine_template_id = req.body.doctor_vaccine_template_id;
+
+
+
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+async function registerStaff(req, res) {
+
+    try{
+        
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        const {
+            name, 
+            email, 
+            password, 
+            date_of_birth, 
+            mobile_number,
+        } = req.body;
+        const isValidUser = await commonFunctions.checkValidUserId(logged_in_id);
+        
+        if(!isValidUser) {
+            return res.status(404).json({
+                response_data : {}, 
+                message : 'Invalid id of logged in user', 
+                status : 404 
+            });
+        }
+
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+        const isUserDoctor = await commonFunctions.isDoctor(logged_in_user_role_id);
+
+        if( !isUserSuperadmin && !isUserAdmin && !isUserDoctor ) {
+            return res.status(403).json({response_data : {}, message : 'You are trying to perform this operation with wrong user type', status : 403});
+        }
+
+        const findSQL = `SELECT id FROM user_roles WHERE role_name = ?`;
+        const [findResult] = await db.execute(findSQL, ['Staff']);
+        const role_id = findResult[0].id;
+                
+        const registeredUserRoleName = await commonFunctions.getUserRoleNameByRoleId(role_id);
+        
+        if(registeredUserRoleName == 'superadmin'){    
+            return res.status(403).json({
+                response_data : {}, 
+                message : 'You are not authorized to perform this operation', 
+                status : 403 
+            });
+        }
+
+        if ( !isUserSuperadmin && !isUserDoctor ) {
+            var permissions = await commonFunctions.checkPermission(logged_in_id, registeredUserRoleName, 'create_permission');
+            if(permissions != false && permissions[0].create_permission == 1) {
+                canCreate = true;
+            } else {
+                canCreate = false;
+            }
+        } else {
+            canCreate = true;
+        }
+        
+            if( canCreate ) {
+
+                const hashedPassword = await bcrypt.hash(password, 10);
+                const SQL = `INSERT INTO users (role_id, parent_id, name, email, password, date_of_birth, mobile_number, created_by, created_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                
+                const values = [
+                    findResult[0].id,
+                    logged_in_id, 
+                    name, 
+                    email, 
+                    hashedPassword, 
+                    date_of_birth, 
+                    mobile_number, 
+                    logged_in_id, 
+                    new Date()
+                ];
+                
+                const emailRegistered = await commonFunctions.isEmailAlreadyRegistered(email);
+                if (emailRegistered) {
+                    return res.status(403).json({ response_data: {}, message: "Email already in use", status: 403 });
+                }
+
+                const formattedQuery = db.format(SQL, values);
+                const [result] = await db.execute(SQL, values);
+                
+                const newUserId = result.insertId;
+
+                const SQL1 = `SELECT id, module_name FROM modules`;
+                const [moduleresult] = await db.execute(SQL1);
+                
+                //Assigning default permissions to the registered user
+
+                let defaultPermissionSQL = `INSERT INTO permissions 
+                (user_id, user_role_id, module_name, module_id, 
+                create_permission, read_permission, update_permission, 
+                delete_permission, created_by, created_date) VALUES `;
+                
+                const permValues = [];
+                const currentDate = new Date();
+                for (let i = 0; i < moduleresult.length; i++) {
+                    defaultPermissionSQL += '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                    if (i < moduleresult.length - 1) {
+                        defaultPermissionSQL += ', ';
+                    }
+                    permValues.push(newUserId, role_id, moduleresult[i].module_name, moduleresult[i].id, 0, 0, 0, 0, logged_in_id, currentDate);
+                }
+
+                await db.execute(defaultPermissionSQL, permValues);
+
+                //Assigning default permissions to the registered user
+
+                return res.status(200).json({
+                    response_data : {}, 
+                    message : 'User Registered Successfully', 
+                    status : 200 
+                });
+            } else {
+                return res.status(403).json({
+                    response_data : {}, 
+                    message : 'You are not authorized to perform this operation', 
+                    status : 403 
+                });
+            }
+        
+    } catch(catcherr) {
+        throw catcherr;
+    }
+}
+
 module.exports = {
+    registerStaff,
     login,
     getStaffList,
     deleteStaff,
@@ -371,7 +477,6 @@ module.exports = {
     viewUpcomingBirthdays,
     forgotPassword,
     resetPassword,
-    registerPatient,
     getDoctorVaccineTemplates,
     getDoctorVaccineTemplateVaccines
 }

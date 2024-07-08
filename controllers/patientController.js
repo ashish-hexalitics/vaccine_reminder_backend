@@ -10,34 +10,76 @@ const port = process.env.PORT || 8071;
 async function registerPatient(req, res) {
     
         try {
-
+            let doctor_id;
+            let patientParentId = null;
+            
             const logged_in_id = req?.body?.logged_in_id || req.user.id;
-            const { mobile_number, name, gender, date_of_birth, vaccine_ids, created_date } = req.body
+            const { mobile_number, name, gender, date_of_birth } = req.body
 
             const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
             const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+            const isUserDoctor = await commonFunctions.isDoctor(logged_in_user_role_id);
+            const isUserStaff = await commonFunctions.isStaff(logged_in_user_role_id);
             
             if( !isUserSuperadmin ){
                 const role_name = await commonFunctions.getUserRoleNameByRoleId(logged_in_user_role_id);
                 var permissions = await commonFunctions.checkPermission(logged_in_id, role_name, 'create_permission');
             }
             
-            if( isUserSuperadmin || permissions[0].create_permission == 1 ) {
+            if( isUserSuperadmin || isUserDoctor || permissions[0].create_permission == 1 ) {
                 const validGenders = ['M', 'F', 'O'];
+
                 if (!validGenders.includes(gender)) {
                     return res.status(400).json({ message: 'Invalid gender value given. The valid values are M, F, and O' });
                 }
 
-                var SQL = 'INSERT INTO patients (parent_id, mobile_number, name, gender, date_of_birth, vaccine_ids, created_by, created_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-                var values = [logged_in_id, mobile_number, name, gender, date_of_birth, vaccine_ids, logged_in_id, created_date];
+                if( !isUserDoctor ) {
+                    doctor_id = req?.body?.doctor_id;
+                    if( !doctor_id ) {
+                        return res.status(403).json({response_data : {}, message : 'You are not a doctor and hence you need to provide doctor id to register a patient', status : 403});
+                    }
+
+                    if( isUserStaff ) {
+                        const checkParentDocSQL = `SELECT parent_id FROM users WHERE id = ?`;
+                        const [staffParentDocResult] = await db.execute(checkParentDocSQL, [logged_in_id]);
+
+                        doctor_id = staffParentDocResult[0].parent_id;
+                    }
+                } else {
+                    doctor_id = logged_in_id;
+                }
+
+                //Getting vaccine_ids
+                const vSQL = `SELECT id, doctor_master_vaccine_template_id FROM doctor_master_vaccine_template_vaccines WHERE doctor_id = ?`;
+                const [vResult] = await db.execute(vSQL, [doctor_id]);
+
+                const vaccineIds = vResult.map(row => row.id);
+                const vaccine_ids = vaccineIds.join(',');
+                
+                //Getting vaccine_ids
+
+                if( !req?.body?.patient_parent_id ) {
+                    const SQL1 = `INSERT INTO patients_parent (master_id, mobile_number, name, gender, date_of_birth, vaccine_ids, created_by, created_date) VALUES (?,?,?,?,?,?,?,?)`;
+        
+                    const values1 = [logged_in_id, mobile_number, name, gender, date_of_birth, vaccine_ids, logged_in_id, new Date()];
+                    const [patientParentData] = await db.execute(SQL1, values1);
+
+                    patientParentId = patientParentData.insertId;
+                } else {
+                    patientParentId = req?.body?.patient_parent_id;
+                }
+
+                var SQL = 'INSERT INTO patients (master_id, parent_id, mobile_number, name, gender, date_of_birth, vaccine_ids, created_by, created_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                var values = [logged_in_id, patientParentId, mobile_number, name, gender, date_of_birth, vaccine_ids, logged_in_id, new Date()];
 
                 const formattedQuery = db.format(SQL, values);
                 
-                [result] = await db.execute(SQL, values);
+                const [result] = await db.execute(SQL, values);
 
                 //Calculating the scheduled time period for vaccination
 
                 const newPatientId = result.insertId;
+                
                 const vaccineSchedulingResult = await commonFunctions.calculateVaccineSchedule(newPatientId);
                 
                 if( vaccineSchedulingResult !== 0 ) {
@@ -55,11 +97,10 @@ async function registerPatient(req, res) {
                                 vsr.doctor_id,
                                 vsr.start_date,
                                 vsr.end_date,
-                                parseInt(created_by, 10),
-                                created_date
+                                parseInt(logged_in_id, 10),
+                                new Date()
                             ]);
-                            console.log([newPatientId, vsr.vaccine_id, vsr.doctor_id, vsr.start_date, vsr.end_date, created_by, created_date]);
-
+                            
                         }
 
                         insertScheduleSQL += placeholders.join(',');
@@ -81,6 +122,37 @@ async function registerPatient(req, res) {
         }
     
 }
+
+// async function registerPatient ( req, res ) {
+    
+//     try {
+//         const logged_in_id = req?.body?.logged_in_id || req.user.id;
+//         const { name, gender, date_of_birth, mobile_number } = req.body;
+
+//         const isUserClient = await commonFunctions.isClient(logged_in_id);
+
+//         if( !isUserClient ) {
+//             return res.status(403).json({response_data : {}, message : 'You are trying to register a patient through wrong user type', status : 403});
+//         }
+
+//         const isUserDoctor = await commonFunctions.isDoctor(logged_in_id);
+
+//         if( isUserDoctor ) {
+           
+//             const SQL1 = `INSERT INTO patients_parent (master_id, mobile_number, name, gender, date_of_birth, vaccine_ids, created_by) VALUES (?,?,?,?,?,?,?)`;
+        
+//             const values1 = [logged_in_id, mobile_number, name, gender, date_of_birth];
+//             await db.execute(SQL1, values1);
+//         } else {
+
+//         }
+
+        
+
+//     } catch (catcherr) {
+//         throw catcherr;
+//     }
+// }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

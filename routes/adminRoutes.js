@@ -10,6 +10,9 @@ adminRouter.post('/login', apiKeyMiddleware, adminController.login);
 
 adminRouter.use(jwtMiddleware);
 adminRouter.post('/register', adminController.registerUser);
+
+adminRouter.post('/register_doctor', adminController.registerDoctor);
+
 adminRouter.post('/create_master_vaccine_template', adminController.createMasterVaccineTemplate);
 adminRouter.post('/create_event', adminController.createEvent);
 adminRouter.get('/get_upcoming_events', adminController.getUpcomingEvents);
