@@ -13,7 +13,7 @@ vaccineRouter.get('/get_vaccine_template_list', vaccineController.getMasterVacci
 // vaccineRouter.get('/calculatevaccineschedule', vaccineController.calculateVaccineSchedule);
 vaccineRouter.put('/update_patient_vaccination_status', vaccineController.updatePatientVaccinationStatus);
 
-vaccineRouter.put('/update_vaccine_details', vaccineController.updateVaccineDetails);
+vaccineRouter.put('/update_doctor_vaccine_details', vaccineController.updateDoctorVaccineDetails);
 vaccineRouter.delete('/delete_master_vaccine_template', vaccineController.deleteSuperAdminVaccine);
 vaccineRouter.get('/get_upcoming_vaccination_list', vaccineController.getUpcomingVaccineList);
 

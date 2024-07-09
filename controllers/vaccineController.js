@@ -28,7 +28,9 @@ async function createMasterVaccineTemplate(req, res) {
     
     try {
 
-        const {logged_in_id, name, description, vaccine_frequency, version_number, is_mandatory, created_by, created_date} = req.body;
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        
+        const { name, description, vaccine_range, range_type, is_mandatory, created_by, created_date} = req.body;
         const role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         
         if(role_id == 0) {
@@ -42,8 +44,8 @@ async function createMasterVaccineTemplate(req, res) {
         }
         if(isUserSuperAdmin) {
             
-            let query = `INSERT INTO master_vaccine (name, description, vaccine_frequency, version_number, is_mandatory, created_by, created_date) VALUES (?,?,?,?,?,?)`;
-            const values = [name, description, vaccine_frequency, version_number, is_mandatory, created_by, created_date];
+            let query = `INSERT INTO master_vaccine (name, description, vaccine_range, range_type, is_mandatory, created_by, created_date) VALUES (?,?,?,?,?,?,?)`;
+            const values = [name, description, vaccine_range, range_type, is_mandatory, created_by, created_date];
             await db.query(query, values);
             return res.status(200).json({response_data : {}, message : "Information stored sucessfully", status : 200});
             
@@ -60,16 +62,18 @@ async function createMasterVaccineTemplate(req, res) {
 
 async function createMasterVaccineDetails(req, res) {
     try {
-        const {logged_in_id, master_vaccine_id, name, description, vaccine_frequency, version_number, is_mandatory, created_date} = req.body;
+
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        const { master_vaccine_id, name, description, vaccine_range, range_type, is_mandatory, created_date} = req.body;
         const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
         const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
 
         if( isUserAdmin ) {
             const SQL = `INSERT INTO master_vaccine_details 
-            (master_vaccine_id, name, description, vaccine_frequency, version_number, is_mandatory, created_by, created_date) VALUES
+            (master_vaccine_id, name, description, vaccine_range, range_type, is_mandatory, created_by, created_date) VALUES
             (?,?,?,?,?,?,?,?)`;
 
-            const values = [master_vaccine_id, name, description, vaccine_frequency, version_number, is_mandatory, logged_in_id, created_date]
+            const values = [master_vaccine_id, name, description, vaccine_range, range_type, is_mandatory, logged_in_id, created_date]
 
             await db.execute(SQL, values);
             return res.status(200).json({response_data : {}, 'message' : 'Master vaccine details has been set successfully', status : 200});
@@ -107,13 +111,13 @@ async function getVaccineVersionList(req, res){
         const isUserSuperAdmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
 
         if( isUserAdmin || isUserSuperAdmin ) {
-            const SQL = `SELECT name, description, vaccine_frequency, is_mandatory FROM master_vaccine_details WHERE master_vaccine_id = ?`;
-            const result = await db.execute(SQL, [vaccine_id]);
+            const SQL = `SELECT name, description, vaccine_range, range_type, is_mandatory FROM master_vaccine_details WHERE master_vaccine_id = ?`;
+            const [result] = await db.execute(SQL, [vaccine_id]);
 
             if( result.length > 0 ) {
                 return res.status(200).json({response_data : result[0], 'message' : 'List of vaccine versions', status : 200});
             } else {
-                return res.status(404).json({response_data : {}, 'message' : 'No vaccine Found', status : 404});
+                return res.status(404).json({response_data : {}, 'message' : 'No vaccine version list found', status : 404});
             }
         } else {
             return res.status(403).json({response_data : {}, 'message' : 'You are not authorized to perform this operation', status : 403});
@@ -161,7 +165,7 @@ async function updatePatientVaccinationStatus(req, res) {
         const isUserSuperadmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
         const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
 
-        if( !isUserSuperadmin && !isUserAdmin ) {
+        if( !isUserSuperadmin || !isUserAdmin ) {
 
             isVaccineForThisPatient = await commonFunctions.isVaccineForPatient(vaccine_id, patient_id);
 
@@ -184,7 +188,7 @@ async function updatePatientVaccinationStatus(req, res) {
 }
 
 
-async function updateVaccineDetails(req, res) {
+async function updateDoctorVaccineDetails(req, res) {
     try {
         
         const logged_in_id = req?.query?.user_id || req.user.id;
@@ -276,6 +280,11 @@ async function getUpcomingVaccineList(req, res) {
         const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
         
         if ( isUserSuperadmin || isUserAdmin ) {
+
+            // if( isUserAdmin ) {
+            //     const permissions = await commonFunctions.checkPermission(logged_in_id, 'staff', 'read_permission');
+            // }
+
             const SQL = `SELECT p.name as patient_name, u.name as doctor_name, 
             dmv.name as vaccine_name, pvi.vaccination_start_date, pvi.vaccination_end_date, pvi.vaccine_id
             FROM patient_vaccination_info as pvi 
@@ -477,11 +486,11 @@ module.exports = {
     getMasterVaccineTemplateList,
     getVaccineVersionList,
     updatePatientVaccinationStatus, //14-06-2024
-    updateVaccineDetails,  //14-06-2024
+    updateDoctorVaccineDetails,  //14-06-2024
     deleteSuperAdminVaccine,
     deleteDoctorVaccine,
     getUpcomingVaccineList,
     getCompletedVaccinationList,
-    getDueVaccinationList
+    getDueVaccinationList,
     createMasterVaccines,
 }
