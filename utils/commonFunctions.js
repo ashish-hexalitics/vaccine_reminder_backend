@@ -363,7 +363,7 @@ async function calculateVaccineSchedule(patient_id) {
                         break;
                 }
                 
-                const vaccine = rangeArr[ix];
+                const vaccine = rangeArr[ix];//
                 const [startRange, endRange] = vaccine.vaccine_range.split('-').map(Number);
                 // const startDate = moment(dateOfBirth).add(startRange, 'months').format('YYYY-MM-DD');
                 // const endDate = moment(dateOfBirth).add(endRange, 'months').format('YYYY-MM-DD');
