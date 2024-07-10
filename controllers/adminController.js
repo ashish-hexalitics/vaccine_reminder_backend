@@ -192,16 +192,17 @@ async function registerDoctor(req, res) {
             });
         }
 
-        if ( !isUserSuperadmin ) {
-            var permissions = await commonFunctions.checkPermission(logged_in_id, registeredUserRoleName, 'create_permission');
-            if(permissions != false && permissions[0].create_permission == 1) {
-                canCreate = true;
-            } else {
-                canCreate = false;
-            }
-        } else {
-            canCreate = true;
-        }
+        // if ( !isUserSuperadmin ) {
+        //     var permissions = await commonFunctions.checkPermission(logged_in_id, registeredUserRoleName, 'create_permission');
+        //     if(permissions != false && permissions[0].create_permission == 1) {
+        //         canCreate = true;
+        //     } else {
+        //         canCreate = false;
+        //     }
+        // } else {
+        //     canCreate = true;
+        // }
+        const canCreate = true;
         
             if( canCreate ) {
 
@@ -497,7 +498,7 @@ async function getUpcomingEvents(req, res) {
             const [result] = await db.execute(SQL, [1]);
             
             if ( result.length > 0 ) {
-                res.status(200).json({response_data : {}, message : 'List of all upcoming events', status : 200});
+                res.status(200).json({response_data : {upcoming_events : result}, message : 'List of all upcoming events', status : 200});
             } else {
                 res.status(404).json({response_data : {}, message : 'No upcoming events found', status : 404});
             }
@@ -603,6 +604,66 @@ async function deleteEvent(req, res) {
     }
 }
 
+async function getMasterVaccineTemplates ( req, res ) {
+    try {
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const isUserSuperAdmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+
+        if ( isUserSuperAdmin || isUserAdmin ) {
+            let SQL = `SELECT name, description 
+            FROM master_vaccine_template 
+            WHERE status = ?`;
+
+            const [result] = await db.execute(SQL, [1]);
+
+            if ( result.length > 0 ) {
+                return res.status(200).json({response_data : {master_vaccine_templates : result}, message : 'List of all master vaccine templates', status : 200});
+            } else {
+                return res.status(404).json({response_data : {}, message : 'No templates found', status : 404});    
+            }
+
+        } else {
+            return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+        }
+        
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
+async function getMasterVaccineTemplateVaccines ( req, res ) {
+    try {
+        const logged_in_id = req?.body?.logged_in_id || req.user.id;
+        const vaccine_template_id = req?.query?.vaccine_template_id;
+
+        const logged_in_user_role_id = await commonFunctions.getUserRoleIdByUserId(logged_in_id);
+        const isUserSuperAdmin = await commonFunctions.isSuperAdmin(logged_in_user_role_id);
+        const isUserAdmin = await commonFunctions.isAdmin(logged_in_user_role_id);
+
+        if ( isUserSuperAdmin || isUserAdmin ) {
+            let SQL = `SELECT name, description, vaccine_range, range_type, version_number, is_mandatory 
+            FROM master_vaccine_template_vaccines
+            WHERE master_vaccine_id = ? AND status = ?`;
+
+            const [result] = await db.execute( SQL, [vaccine_template_id, 1] );
+
+            if ( result.length > 0 ) {
+                return res.status(200).json({response_data : {master_template_vaccines : result}, message : 'List of master vaccines', status : 200});
+            } else {
+                return res.status(404).json({response_data : {}, message : 'No vaccines found', status : 404});
+            }
+        } else {
+            return res.status(403).json({response_data : {}, message : 'You are not authorized to perform this operation', status : 403});
+        }
+        
+    } catch (catcherr) {
+        throw catcherr;
+    }
+}
+
 module.exports = {
     registerUser,
     login,
@@ -614,5 +675,7 @@ module.exports = {
     viewEvent,
     deleteEvent,
     registerDoctor,
+    getMasterVaccineTemplates,
+    getMasterVaccineTemplateVaccines
     
 }

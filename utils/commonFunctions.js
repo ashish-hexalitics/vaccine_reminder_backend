@@ -197,8 +197,8 @@ async function checkPermission(user_id, module, permission) {
 async function getUserRoleIdByUserId(user_id){
     try{
         const SQL = `SELECT user_roles.id as role_id FROM user_roles INNER JOIN users ON user_roles.id = users.role_id WHERE users.id = ?`;
-        const formattedQQQQ = db.format(SQL, [user_id]);
-        console.log(formattedQQQQ, "line 200 of commonfunctions");
+        // const formattedQQQQ = db.format(SQL, [user_id]);
+        // console.log(formattedQQQQ, "line 200 of commonfunctions");
         const [rows] = await db.execute(SQL, [user_id]);
 
         if(rows && rows.length > 0) {

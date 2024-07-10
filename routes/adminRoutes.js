@@ -21,4 +21,7 @@ adminRouter.get('/view_event', adminController.viewEvent);
 adminRouter.put('/delete_event', adminController.deleteEvent);
 adminRouter.post('/create_master_vaccine_template_vaccines', adminController.createMasterVaccineTemplateVaccines);
 
+adminRouter.get('/get_master_vaccine_templates', adminController.getMasterVaccineTemplates);
+adminRouter.get('/get_master_vaccine_template_vaccines', adminController.getMasterVaccineTemplateVaccines);
+
 module.exports = adminRouter;

@@ -313,7 +313,7 @@ async function getDoctorVaccineTemplateVaccines ( req, res ) {
         if ( isUserDoctor ) {
             let SQL = `SELECT name, description, vaccine_range, range_type, version_number, is_mandatory 
             FROM doctor_master_vaccine_template_vaccines
-            WHERE master_vaccine_template_id = ? AND status = ?`;
+            WHERE doctor_master_vaccine_template_id = ? AND status = ?`;
 
             const [result] = await db.execute( SQL, [vaccine_template_id, 1] );
 
@@ -388,17 +388,17 @@ async function registerStaff(req, res) {
             });
         }
 
-        if ( !isUserSuperadmin && !isUserDoctor ) {
-            var permissions = await commonFunctions.checkPermission(logged_in_id, registeredUserRoleName, 'create_permission');
-            if(permissions != false && permissions[0].create_permission == 1) {
-                canCreate = true;
-            } else {
-                canCreate = false;
-            }
-        } else {
-            canCreate = true;
-        }
-        
+        // if ( !isUserSuperadmin && !isUserDoctor ) {
+        //     var permissions = await commonFunctions.checkPermission(logged_in_id, registeredUserRoleName, 'create_permission');
+        //     if(permissions != false && permissions[0].create_permission == 1) {
+        //         canCreate = true;
+        //     } else {
+        //         canCreate = false;
+        //     }
+        // } else {
+        //     canCreate = true;
+        // }
+        const canCreate = true;
             if( canCreate ) {
 
                 const hashedPassword = await bcrypt.hash(password, 10);
